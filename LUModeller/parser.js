@@ -1,11 +1,8 @@
 // TODO: support for command line to specify schema version, versionID, name, desc, culture
-
 // TODO: support hierarchical, composite, trained utterances, entity training values
-
 // TODO: various error handling, negative test cases
-
 // TODO: documentation, samples
-
+// TODO: bug with multiple #ref in a file (just that)
 // TODO: packaging
 const fs = require('fs');
 
@@ -15,7 +12,8 @@ module.exports = {
         var filesToParse = [rootFile];
         var allParsedContent = new Array();
         while(filesToParse.length > 0) {
-            filesToParse.forEach(function(file) {
+            //filesToParse.forEach(function(file) {
+                var file = filesToParse[0];
                 fs.stat(file, (err, stats) => {
                     if(err) console.log('Sorry, you need to give me a .lu file [' + file + ']');        
                 });
@@ -40,7 +38,7 @@ module.exports = {
                 if(filesToParse.length > 0) {
                     if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
                 }
-            })
+            //})
         }
         // collate content
 
@@ -145,10 +143,10 @@ var parseFile = function(fileContent)
         // is this an intent or entity?
         chunk = chunk.trim();
         if(chunk.indexOf("#ref") === 0) {
-            console.log('have external file reference:');
+            //console.log('have external file reference:');
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
             var fileRef = chunkSplitByLine[0].replace("#ref('", '').replace(")",'').replace("'",'');
-            console.log('file:' + fileRef);
+            //console.log('file:' + fileRef);
             additionalFilesToParse.push(fileRef);
         } else if(chunk.indexOf("#") === 0) {
             // split contents in this chunk by newline
