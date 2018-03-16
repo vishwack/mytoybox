@@ -1,0 +1,26 @@
+{
+  "name": "botbuilder-lumodeller",
+  "version": "0.0.1",
+  "description": "LU modelling tool for Microsoft Bot Builder. Accepts .lu file and converts it to LUIS json format.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vishwacsena/mytoybox.git"
+  },
+  "author": "Vishwac Sena Kannan",
+  "license": "MIT",
+  "bin": {
+    "snippet": "./index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/vishwacsena/mytoybox/issues"
+  },
+  "homepage": "https://github.com/vishwacsena/mytoybox#readme",
+  "dependencies": {
+    "commander": "^2.15.0",
+    "nearley": "^2.13.0"
+  }
+}
