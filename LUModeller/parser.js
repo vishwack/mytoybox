@@ -158,31 +158,88 @@ var parseFile = function(fileContent)
             });
             chunkSplitByLine.splice(0,1);
             chunkSplitByLine.forEach(function(utterance){
-                var patternObject = {
-                    "text": utterance,
-                    "intent": intentName
-                }
-                LUISJsonStruct.patterns.push(patternObject);
+                
 
                 // if utterance contains an entity, push that to patternEntity
+                // TODO: handle multiple entity matches in a line
                 if(utterance.includes("{")) {
                     var entityRegex = new RegExp(/\{(.*?)\}/);
                     var entity = utterance.match(entityRegex)[1];
-                    // see if we already have this in patternAny entity collection
-                    var lMatch = true;
-                    for(var i in LUISJsonStruct.patternAnyEntities) {
-                        if(LUISJsonStruct.patternAnyEntities[i].name === entity) {
-                            lMatch = false;
-                            break;
-                        }
+                    var labelledValue = "";
+                    // see if this is a trained simple entity of format {entityName:labelled value}
+                    if(entity.includes(":")) {
+                        var entitySplit = entity.split(":");
+                        entity = entitySplit[0];
+                        labelledValue = entitySplit[1];
                     }
-                    if(lMatch) {
-                        var pEntityObject = {
-                            "name": entity,
-                            "roles": new Array()
+
+                    if(labelledValue !== "") {
+                        // add this to entities collection unless it already exists
+                        var lMatch = true;
+                        for(var i in LUISJsonStruct.entities) {
+                            if(LUISJsonStruct.entities[i].name === entity) {
+                                lMatch = false;
+                                break;
+                            }
                         }
-                        LUISJsonStruct.patternAnyEntities.push(pEntityObject);
+                        if(lMatch) {
+                            var pEntityObject = {
+                                "name": entity,
+                                "roles": new Array()
+                            }
+                            LUISJsonStruct.entities.push(pEntityObject);
+                        }
+                        // add the utterance to utterances collection
+                        // clean up uttearnce to only include labelledentityValue
+                        var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
+                        var startPos = updatedUtterance.search(labelledValue);
+                        var endPos = startPos + labelledValue.length - 1;
+                        var utteranceObject = {
+                            "text": updatedUtterance,
+                            "intent":intentName,
+                            "entities": [
+                                {
+                                    "entity": entity,
+                                    "startPos":startPos,
+                                    "endPos":endPos
+                                }
+                            ]
+                        }
+                        LUISJsonStruct.utterances.push(utteranceObject);
+                    } else {
+                        // these need to be treated as pattern entity
+                        // see if we already have this in patternAny entity collection
+                        var lMatch = true;
+                        for(var i in LUISJsonStruct.patternAnyEntities) {
+                            if(LUISJsonStruct.patternAnyEntities[i].name === entity) {
+                                lMatch = false;
+                                break;
+                            }
+                        }
+                        if(lMatch) {
+                            var pEntityObject = {
+                                "name": entity,
+                                "roles": new Array()
+                            }
+                            LUISJsonStruct.patternAnyEntities.push(pEntityObject);
+                        }
+                        // add the utterance to patterns
+                        var patternObject = {
+                            "text": utterance,
+                            "intent": intentName
+                        }
+                        LUISJsonStruct.patterns.push(patternObject);
                     }
+
+
+                } else {
+                    // push this to patterns
+                    // add the utterance to patterns
+                    var patternObject = {
+                        "text": utterance,
+                        "intent": intentName
+                    }
+                    LUISJsonStruct.patterns.push(patternObject);
                 }
             })
         } else if(chunk.indexOf("$") === 0) {
@@ -273,6 +330,22 @@ var parseFile = function(fileContent)
                 };
                 closedListObj.subLists.push(subListObj);
                 LUISJsonStruct.closedLists.push(closedListObj);
+            } else if(entityType.toLowerCase() === 'simple') {
+                // add this to entities if it doesnt exist
+                var lMatch = true;
+                for(var i in LUISJsonStruct.entities) {
+                    if(LUISJsonStruct.entities[i].name === entityName) {
+                        lMatch = false;
+                        break;
+                    }
+                }
+                if(lMatch) {
+                    var pEntityObject = {
+                        "name": entityName,
+                        "roles": new Array()
+                    }
+                    LUISJsonStruct.entities.push(pEntityObject);
+                }
             }
         } 
     });

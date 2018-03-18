@@ -18,10 +18,3 @@ my name is {e:vishwac}
 you can call me {e:vishwac}
 
 $e:simple
-
-#CreateAlarm
-create an alarm
-create an alarm for {alarmTime}
-set an alarm for {alarmTime}
-
-$alarmTime:datetimeV2
