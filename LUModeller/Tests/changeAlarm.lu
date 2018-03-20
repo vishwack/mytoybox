@@ -1,2 +1,3 @@
 #changeAlarm
 change an alarm
+change {dateTime} to {newTime}

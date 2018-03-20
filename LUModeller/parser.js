@@ -4,6 +4,9 @@
 // TODO: documentation, samples
 // TODO: bug with multiple #ref in a file (just that)
 // TODO: packaging
+
+// TODO: Add validation rules - 
+// e.g. '{entity} in {a:value}' mixing pattern with labelled entities is not allowed.
 const fs = require('fs');
 
 module.exports = {
@@ -135,118 +138,85 @@ var parseFile = function(fileContent)
         "patternAnyEntities": new Array(),
         "prebuiltEntities": new Array()
     };
-    //find the first # or $
     // split on blank lines
     var splitOnBlankLines = fileContent.toString().split(/\n\s*\n|\r\n\s*\r\n/);
     // loop through every chunk of information
     splitOnBlankLines.forEach(function(chunk) {
         // is this an intent or entity?
         chunk = chunk.trim();
-        if(chunk.indexOf("#ref") === 0) {
+        if(chunk.indexOf(PARSERCONSTS.FILEREF) === 0) {
             //console.log('have external file reference:');
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
-            var fileRef = chunkSplitByLine[0].replace("#ref('", '').replace(")",'').replace("'",'');
-            //console.log('file:' + fileRef);
+            var fileRef = chunkSplitByLine[0].replace(PARSERCONSTS.FILEREF + "('", '').replace(")",'').replace("'",'');
             additionalFilesToParse.push(fileRef);
-        } else if(chunk.indexOf("#") === 0) {
+        } else if(chunk.indexOf(PARSERCONSTS.INTENT) === 0) {
             // split contents in this chunk by newline
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
-            var intentName = chunkSplitByLine[0].replace("#", '');
-            // TODO: insert only if the intent is not already there.
-            LUISJsonStruct.intents.push({
-                "name": intentName
-            });
+            var intentName = chunkSplitByLine[0].replace(PARSERCONSTS.INTENT, '');
+            // insert only if the intent is not already present.
+            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.INTENT, intentName);
+            // remove first line from chunk
             chunkSplitByLine.splice(0,1);
             chunkSplitByLine.forEach(function(utterance){
-                
-
                 // if utterance contains an entity, push that to patternEntity
-                // TODO: handle multiple entity matches in a line
                 if(utterance.includes("{")) {
-                    var entityRegex = new RegExp(/\{(.*?)\}/);
-                    var entity = utterance.match(entityRegex)[1];
-                    var labelledValue = "";
-                    // see if this is a trained simple entity of format {entityName:labelled value}
-                    if(entity.includes(":")) {
-                        var entitySplit = entity.split(":");
-                        entity = entitySplit[0];
-                        labelledValue = entitySplit[1];
-                    }
-
-                    if(labelledValue !== "") {
-                        // add this to entities collection unless it already exists
-                        var lMatch = true;
-                        for(var i in LUISJsonStruct.entities) {
-                            if(LUISJsonStruct.entities[i].name === entity) {
-                                lMatch = false;
-                                break;
+                    var entityRegex = new RegExp(/\{(.*?)\}/g);
+                    var entitiesFound = utterance.match(entityRegex);
+                    // handle all entity matches in the utterance
+                    entitiesFound.forEach(function(entity) {
+                        var labelledValue = "";
+                        entity = entity.replace("{", "").replace("}", "");
+                        // see if this is a trained simple entity of format {entityName:labelled value}
+                        if(entity.includes(":")) {
+                            var entitySplit = entity.split(":");
+                            entity = entitySplit[0];
+                            labelledValue = entitySplit[1];
+                        }
+                        if(labelledValue !== "") {
+                            // add this to entities collection unless it already exists
+                            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entity);
+                            // clean up uttearnce to only include labelledentityValue and add to utterances collection
+                            var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
+                            var startPos = updatedUtterance.search(labelledValue);
+                            var endPos = startPos + labelledValue.length - 1;
+                            var utteranceObject = {
+                                "text": updatedUtterance,
+                                "intent":intentName,
+                                "entities": [
+                                    {
+                                        "entity": entity,
+                                        "startPos":startPos,
+                                        "endPos":endPos
+                                    }
+                                ]
                             }
-                        }
-                        if(lMatch) {
-                            var pEntityObject = {
-                                "name": entity,
-                                "roles": new Array()
+                            LUISJsonStruct.utterances.push(utteranceObject);
+                        } else {
+                            // these need to be treated as pattern entity
+                            // see if we already have this in patternAny entity collection
+                            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.PATTERNANYENTITY, entity);
+                            // add the utterance to patterns
+                            var patternObject = {
+                                "text": utterance,
+                                "intent": intentName
                             }
-                            LUISJsonStruct.entities.push(pEntityObject);
+                            LUISJsonStruct.patterns.push(patternObject);
                         }
-                        // add the utterance to utterances collection
-                        // clean up uttearnce to only include labelledentityValue
-                        var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
-                        var startPos = updatedUtterance.search(labelledValue);
-                        var endPos = startPos + labelledValue.length - 1;
-                        var utteranceObject = {
-                            "text": updatedUtterance,
-                            "intent":intentName,
-                            "entities": [
-                                {
-                                    "entity": entity,
-                                    "startPos":startPos,
-                                    "endPos":endPos
-                                }
-                            ]
-                        }
-                        LUISJsonStruct.utterances.push(utteranceObject);
-                    } else {
-                        // these need to be treated as pattern entity
-                        // see if we already have this in patternAny entity collection
-                        var lMatch = true;
-                        for(var i in LUISJsonStruct.patternAnyEntities) {
-                            if(LUISJsonStruct.patternAnyEntities[i].name === entity) {
-                                lMatch = false;
-                                break;
-                            }
-                        }
-                        if(lMatch) {
-                            var pEntityObject = {
-                                "name": entity,
-                                "roles": new Array()
-                            }
-                            LUISJsonStruct.patternAnyEntities.push(pEntityObject);
-                        }
-                        // add the utterance to patterns
-                        var patternObject = {
-                            "text": utterance,
-                            "intent": intentName
-                        }
-                        LUISJsonStruct.patterns.push(patternObject);
-                    }
-
-
+                    });
                 } else {
-                    // push this to patterns
-                    // add the utterance to patterns
+                    // push this utterance to patterns
                     var patternObject = {
                         "text": utterance,
                         "intent": intentName
                     }
                     LUISJsonStruct.patterns.push(patternObject);
                 }
-            })
-        } else if(chunk.indexOf("$") === 0) {
+            });
+        } else if(chunk.indexOf(PARSERCONSTS.ENTITY) === 0) {
             // we have an entity definition
             // split contents in this chunk by newline
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
-            var entityDef = chunkSplitByLine[0].replace("$", '').split(':');
+            var entityDef = chunkSplitByLine[0].replace(PARSERCONSTS.ENTITY, '').split(':');
             var entityName = entityDef[0];
             var entityType = entityDef[1];
             // see if we already have this as Pattern.Any entity
@@ -332,20 +302,7 @@ var parseFile = function(fileContent)
                 LUISJsonStruct.closedLists.push(closedListObj);
             } else if(entityType.toLowerCase() === 'simple') {
                 // add this to entities if it doesnt exist
-                var lMatch = true;
-                for(var i in LUISJsonStruct.entities) {
-                    if(LUISJsonStruct.entities[i].name === entityName) {
-                        lMatch = false;
-                        break;
-                    }
-                }
-                if(lMatch) {
-                    var pEntityObject = {
-                        "name": entityName,
-                        "roles": new Array()
-                    }
-                    LUISJsonStruct.entities.push(pEntityObject);
-                }
+                addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entityName);
             }
         } 
     });
@@ -354,4 +311,73 @@ var parseFile = function(fileContent)
         "LUISBlob": LUISJsonStruct
     };
     
+}
+const LUISObjNameEnum = {
+    INTENT: "intents",
+    ENTITIES: "entities",
+    PATTERNANYENTITY: "patternAnyEntities"
+};
+
+const PARSERCONSTS = {
+    FILEREF: "#ref",
+    INTENT: "#",
+    ENTITY: "$"
+}
+
+var addItemIfNotPresent = function(collection, type, value) {
+    var hasValue = false;
+    switch(type) {
+        case LUISObjNameEnum.INTENT:
+            console.log('checking if collection has intent=' + value);
+            for (i in collection.intents) {
+                if(collection.intents[i].name === value) {
+                    hasValue = true;
+                    console.log('found intent=' + value);
+                    break;
+                }
+            }
+            if(!hasValue) {
+                console.log('adding new intent=' + value);
+                collection.intents.push({
+                    "name": value
+                });
+            }
+            break;
+        case LUISObjNameEnum.ENTITIES:
+            for(var i in collection.entities) {
+                if(collection.entities[i].name === value) {
+                    hasValue = true;
+                    break;
+                }
+            }
+            if(!hasValue) {
+                var pEntityObject = {
+                    "name": value,
+                    "roles": new Array()
+                }
+                collection.entities.push(pEntityObject);
+            }
+            break;
+        case LUISObjNameEnum.PATTERNANYENTITY:
+            for(var i in collection.patternAnyEntities) {
+                if(collection.patternAnyEntities[i].name === value) {
+                    hasValue = true;
+                    break;
+                }
+            }
+            if(!hasValue) {
+                var pEntityObject = {
+                    "name": value,
+                    "roles": new Array()
+                }
+                collection.patternAnyEntities.push(pEntityObject);
+            }
+            break;
+        case "closedLists":
+        case "bing_entities":
+        case "utterances":
+        case "patterns":
+        
+        case "prebuiltEntities":
+    }
 }
