@@ -69,38 +69,66 @@ module.exports = {
     }
 };
 var collateFiles = function(parsedBlobs) {
-    // TODO: finish up collate
     var FinalLUISJSON = parsedBlobs[0];
     parsedBlobs.splice(0,1);
     parsedBlobs.forEach(function(blob) {
-        // do we have intents here? 
-        if(blob.intents.length > 0) {
-            var intentExists = false;
-            for(bIndex in blob.intents) {
-                // add this if this does not already exist in final
-                for(fIndex in FinalLUISJSON.intents) {
-                    if(blob.intents[bIndex].name === FinalLUISJSON.intents[fIndex].name) {
-                        intentExists = true;
-                        break;
-                    }
-                }
-                if(intentExists) break;
-                else {
-                    FinalLUISJSON.intents.push({
-                        "name": blob.intents[bIndex].name
-                    });
-                }
-            }
-        }
-
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.INTENT);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.ENTITIES);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.PATTERNANYENTITY);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.CLOSEDLISTS);
         // do we have patterns here?
         if(blob.patterns.length > 0) {
             blob.patterns.forEach(function(pattern) {
                 FinalLUISJSON.patterns.push(pattern);
-            })
+            });
+        }
+        // do we have utterances here?
+        if(blob.utterances.length > 0) {
+            blob.utterances.forEach(function(utteranceItem) {
+                FinalLUISJSON.utterances.push(utteranceItem);
+            });
+        }
+        // do we have bing_entities here? 
+        if(blob.bing_entities.length > 0) {
+            blob.bing_entities.forEach(function(bingEntity) {
+                if(!FinalLUISJSON.bing_entities.includes(bingEntity)) FinalLUISJSON.bing_entities.push(bingEntity);
+            });
+        }
+        // do we have prebuiltEntities here?
+        if(blob.prebuiltEntities.length > 0) {
+            blob.prebuiltEntities.forEach(function(prebuiltEntity){
+                var prebuiltTypeExists = false;
+                for(fIndex in FinalLUISJSON.prebuiltEntities) {
+                    if(prebuiltEntity.type === FinalLUISJSON.prebuiltEntities[fIndex].type) {
+                        // TODO: do we have all the roles? if not, merge the roles
+                        prebuiltTypeExists = true;
+                        break;
+                    }
+                }
+                if(!prebuiltTypeExists) {
+                    FinalLUISJSON.prebuiltEntities.push(prebuiltEntity);
+                }
+            });
         }
     }); 
     return FinalLUISJSON;
+}
+var mergeResults = function(blob, finalCollection, type) {
+    if(blob[type].length > 0) {
+        blob[type].forEach(function(blobItem){
+            // add if this intent does not already exist in finalJSON
+            var itemExists = false;
+            for(fIndex in finalCollection[type]) {
+                if(blobItem.name === finalCollection[type][fIndex].name){
+                    itemExists = true;
+                    break;
+                }
+            }
+            if(!itemExists) {
+                finalCollection[type].push(blobItem);
+            }
+        });
+    }
 }
 var parseFile = function(fileContent) 
 {
@@ -145,14 +173,13 @@ var parseFile = function(fileContent)
         // is this an intent or entity?
         chunk = chunk.trim();
         if(chunk.indexOf(PARSERCONSTS.FILEREF) === 0) {
-            //console.log('have external file reference:');
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
             var fileRef = chunkSplitByLine[0].replace(PARSERCONSTS.FILEREF + "('", '').replace(")",'').replace("'",'');
             additionalFilesToParse.push(fileRef);
         } else if(chunk.indexOf(PARSERCONSTS.INTENT) === 0) {
             // split contents in this chunk by newline
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
-            var intentName = chunkSplitByLine[0].replace(PARSERCONSTS.INTENT, '');
+            var intentName = chunkSplitByLine[0].replace(PARSERCONSTS.INTENT, '').trim();
             // insert only if the intent is not already present.
             addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.INTENT, intentName);
             // remove first line from chunk
@@ -256,13 +283,24 @@ var parseFile = function(fileContent)
             if(entityType.toLowerCase() === 'list') {
                 // remove the first entity declaration line
                 chunkSplitByLine.splice(0,1);
-                var closedListObj = {
-                    "name": entityName,
-                    "subLists": new Array(),
-                    "roles": new Array()
-                };
+                var closedListObj = {};
                 
-                // TODO: do we already have this closed list? 
+                // do we already have this closed list? 
+                var hasValue = false;
+                var i;
+                for(i in LUISJsonStruct.closedLists) {
+                    if(LUISJsonStruct.closedLists[i].name === entityName) {
+                        hasValue = true;
+                        break;
+                    }
+                }
+                if(!hasValue) {
+                    closedListObj.name = entityName;
+                    closedListObj.subLists = new Array();
+                    closedListObj.roles = new Array();
+                } else {
+                    closedListObj = LUISJsonStruct.closedLists[i];
+                }
 
                 var readingSubList = false;
                 var cForm = "";
@@ -299,7 +337,7 @@ var parseFile = function(fileContent)
                     "list": synonymsList
                 };
                 closedListObj.subLists.push(subListObj);
-                LUISJsonStruct.closedLists.push(closedListObj);
+                if(!hasValue) LUISJsonStruct.closedLists.push(closedListObj);
             } else if(entityType.toLowerCase() === 'simple') {
                 // add this to entities if it doesnt exist
                 addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entityName);
@@ -315,7 +353,8 @@ var parseFile = function(fileContent)
 const LUISObjNameEnum = {
     INTENT: "intents",
     ENTITIES: "entities",
-    PATTERNANYENTITY: "patternAnyEntities"
+    PATTERNANYENTITY: "patternAnyEntities",
+    CLOSEDLISTS: "closedLists"
 };
 
 const PARSERCONSTS = {
@@ -326,58 +365,17 @@ const PARSERCONSTS = {
 
 var addItemIfNotPresent = function(collection, type, value) {
     var hasValue = false;
-    switch(type) {
-        case LUISObjNameEnum.INTENT:
-            console.log('checking if collection has intent=' + value);
-            for (i in collection.intents) {
-                if(collection.intents[i].name === value) {
-                    hasValue = true;
-                    console.log('found intent=' + value);
-                    break;
-                }
-            }
-            if(!hasValue) {
-                console.log('adding new intent=' + value);
-                collection.intents.push({
-                    "name": value
-                });
-            }
+    for(var i in collection[type]) {
+        if(collection[type][i].name === value) {
+            hasValue = true;
             break;
-        case LUISObjNameEnum.ENTITIES:
-            for(var i in collection.entities) {
-                if(collection.entities[i].name === value) {
-                    hasValue = true;
-                    break;
-                }
-            }
-            if(!hasValue) {
-                var pEntityObject = {
-                    "name": value,
-                    "roles": new Array()
-                }
-                collection.entities.push(pEntityObject);
-            }
-            break;
-        case LUISObjNameEnum.PATTERNANYENTITY:
-            for(var i in collection.patternAnyEntities) {
-                if(collection.patternAnyEntities[i].name === value) {
-                    hasValue = true;
-                    break;
-                }
-            }
-            if(!hasValue) {
-                var pEntityObject = {
-                    "name": value,
-                    "roles": new Array()
-                }
-                collection.patternAnyEntities.push(pEntityObject);
-            }
-            break;
-        case "closedLists":
-        case "bing_entities":
-        case "utterances":
-        case "patterns":
-        
-        case "prebuiltEntities":
+        }
     }
+    if(!hasValue) {
+        var entityObject = {
+            "name": value,
+            "roles": new Array()
+        }
+        collection[type].push(entityObject);
+    }  
 }

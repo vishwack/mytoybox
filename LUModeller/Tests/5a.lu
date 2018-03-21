@@ -1,0 +1,25 @@
+#Greeting
+Hi
+Hello
+Good morning
+Good evening
+
+#Help
+help
+I need help
+please help
+
+#AskForUserName
+{e:vishwac}
+I'm {e:vishwac}
+call me {e:vishwac}
+my name is {e:vishwac}
+{e:vishwac} is my name
+you can call me {e:vishwac}
+
+$e:simple
+
+#CreateAlarm
+create an alarm
+create an alarm for {alarmTime}
+set an alarm for {alarmTime}

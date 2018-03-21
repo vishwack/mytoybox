@@ -1,5 +1,6 @@
 #ref('./Tests/9.lu')
 
+#ref('./Tests/changeAlarm.lu')
+
 #ref('./Tests/none.lu')
 
-#ref('./Tests/changeAlarm.lu')
