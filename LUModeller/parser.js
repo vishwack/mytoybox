@@ -1,12 +1,9 @@
 // TODO: support for command line to specify schema version, versionID, name, desc, culture
-// TODO: support hierarchical, composite, trained utterances, entity training values
 // TODO: various error handling, negative test cases
 // TODO: documentation, samples
-// TODO: bug with multiple #ref in a file (just that)
 // TODO: packaging
-
 // TODO: Add validation rules - 
-// e.g. '{entity} in {a:value}' mixing pattern with labelled entities is not allowed.
+//       e.g. '{entity} in {a:value}' mixing pattern with labelled entities is not allowed.
 const fs = require('fs');
 
 module.exports = {
@@ -15,54 +12,44 @@ module.exports = {
         var filesToParse = [rootFile];
         var allParsedContent = new Array();
         while(filesToParse.length > 0) {
-            //filesToParse.forEach(function(file) {
-                var file = filesToParse[0];
-                fs.stat(file, (err, stats) => {
-                    if(err) console.log('Sorry, you need to give me a .lu file [' + file + ']');        
-                });
-                var fileContent = fs.readFileSync(file);
-                if (!fileContent) {
-                    console.log('Sorry, error reading file:' + file);    
-                }
-                if(!program.quiet) console.log('---Parsing file: ' + file);
-                var parsedContent = parseFile(fileContent);
-                if (!parsedContent) {
-                    console.log('Sorry, file ' + file + 'had invalid content');
-                } else {
-                    if(!program.quiet)console.log('---Parsing complete: ' + file);
-                    allParsedContent.push(parsedContent.LUISBlob);
-                }
-                // remove this file from the list
-                filesToParse.splice(0,1);
-                // add additional files to parse to the list
-                if(parsedContent.fParse.length > 0) {
-                    parsedContent.fParse.forEach((file) => filesToParse.push(file));
-                }
-                if(filesToParse.length > 0) {
-                    if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
-                }
-            //})
+            var file = filesToParse[0];
+            fs.stat(file, (err, stats) => {
+                if(err) console.log('Sorry, you need to give me a .lu file [' + file + ']');        
+            });
+            var fileContent = fs.readFileSync(file);
+            if (!fileContent) {
+                console.log('Sorry, error reading file:' + file);    
+            }
+            if(!program.quiet) console.log('---Parsing file: ' + file);
+            var parsedContent = parseFile(fileContent);
+            if (!parsedContent) {
+                console.log('Sorry, file ' + file + 'had invalid content');
+            } else {
+                if(!program.quiet)console.log('---Parsing complete: ' + file);
+                allParsedContent.push(parsedContent.LUISBlob);
+            }
+            // remove this file from the list
+            filesToParse.splice(0,1);
+            // add additional files to parse to the list
+            if(parsedContent.fParse.length > 0) {
+                parsedContent.fParse.forEach((file) => filesToParse.push(file));
+            }
+            if(filesToParse.length > 0) {
+                if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
+            }
         }
-        // collate content
-
-        
-        //console.log('----Collate call----');
         var finalJSON = collateFiles(allParsedContent);
-        
+        if(!program.versionId) program.versionId = "0.1";
+        if(!program.luis_schema_version) program.luis_schema_version = "2.1.0";
+        if(!program.name) program.name = "myLUISApp";
+        if(!program.desc) program.desc = "";
+        if(!program.culture) program.culture = "en-us";   
 
-        // TODO: get these as command line args
-        /*"luis_schema_version": "2.1.0",
-            "versionId": "0.1",
-            "name": "LUModellerTest",
-            "desc": "",
-            "culture": "en-us",
-        */
-
-        finalJSON.luis_schema_version = "2.1.0";
-        finalJSON.versionId = "0.1";
-        finalJSON.name = "LUModellerTest",
-        finalJSON.desc = "";
-        finalJSON.culture = "en-us";
+        finalJSON.luis_schema_version = program.luis_schema_version;
+        finalJSON.versionId = program.versionId;
+        finalJSON.name = program.name,
+        finalJSON.desc = program.desc;
+        finalJSON.culture = program.culture;
         
         console.log(JSON.stringify(finalJSON, null, 2));
         
@@ -100,7 +87,12 @@ var collateFiles = function(parsedBlobs) {
                 var prebuiltTypeExists = false;
                 for(fIndex in FinalLUISJSON.prebuiltEntities) {
                     if(prebuiltEntity.type === FinalLUISJSON.prebuiltEntities[fIndex].type) {
-                        // TODO: do we have all the roles? if not, merge the roles
+                        // do we have all the roles? if not, merge the roles
+                        prebuiltEntity.roles.forEach(function(role) {
+                            if(!FinalLUISJSON.prebuiltEntities[fIndex].roles.includes(role)) {
+                                FinalLUISJSON.prebuiltEntities[fIndex].roles.push(role);
+                            }
+                        });
                         prebuiltTypeExists = true;
                         break;
                     }
@@ -150,11 +142,12 @@ var parseFile = function(fileContent)
     var otherTypes = ['list'];
 
     var LUISJsonStruct = {
-        "intents": [
+        /*"intents": [
             {
                 "name":"none"
             }
-        ],
+        ],*/
+        "intents": new Array(),
         "entities": new Array(),
         "composites": new Array(),
         "closedLists": new Array(),
@@ -231,12 +224,24 @@ var parseFile = function(fileContent)
                         }
                     });
                 } else {
-                    // push this utterance to patterns
-                    var patternObject = {
-                        "text": utterance,
-                        "intent": intentName
+                    if(utterance.trim().indexOf("~") === 0) {
+                        uttearnce = utterance.slice(1);
+                        // push this utterance to patterns
+                        var patternObject = {
+                            "text": utterance,
+                            "intent": intentName
+                        }
+                        LUISJsonStruct.patterns.push(patternObject);
+                    } else {
+                        // push this to utterances
+                        var utteranceObject = {
+                            "text": utterance,
+                            "intent":intentName,
+                            "entities": new Array()
+                        }
+                        LUISJsonStruct.utterances.push(utteranceObject);
                     }
-                    LUISJsonStruct.patterns.push(patternObject);
+                    
                 }
             });
         } else if(chunk.indexOf(PARSERCONSTS.ENTITY) === 0) {
