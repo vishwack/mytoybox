@@ -1,9 +1,3 @@
-// TODO: support for command line to specify schema version, versionID, name, desc, culture
-// TODO: various error handling, negative test cases
-// TODO: documentation, samples
-// TODO: packaging
-// TODO: Add validation rules - 
-//       e.g. '{entity} in {a:value}' mixing pattern with labelled entities is not allowed.
 const fs = require('fs');
 
 module.exports = {
@@ -14,14 +8,17 @@ module.exports = {
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
             fs.stat(file, (err, stats) => {
-                if(err) console.log('Sorry, you need to give me a .lu file [' + file + ']');        
+                if(err) {
+                    console.log('Sorry unable to open [' + file + ']');        
+                    return;
+                }
             });
             var fileContent = fs.readFileSync(file);
             if (!fileContent) {
                 console.log('Sorry, error reading file:' + file);    
             }
             if(!program.quiet) console.log('---Parsing file: ' + file);
-            var parsedContent = parseFile(fileContent);
+            var parsedContent = parseFile(fileContent, program.quiet);
             if (!parsedContent) {
                 console.log('Sorry, file ' + file + 'had invalid content');
             } else {
@@ -122,7 +119,7 @@ var mergeResults = function(blob, finalCollection, type) {
         });
     }
 }
-var parseFile = function(fileContent) 
+var parseFile = function(fileContent, log) 
 {
     var additionalFilesToParse = new Array();
     var builtInTypes = 
@@ -140,13 +137,7 @@ var parseFile = function(fileContent)
             "url"
         ];
     var otherTypes = ['list'];
-
     var LUISJsonStruct = {
-        /*"intents": [
-            {
-                "name":"none"
-            }
-        ],*/
         "intents": new Array(),
         "entities": new Array(),
         "composites": new Array(),
@@ -177,9 +168,75 @@ var parseFile = function(fileContent)
             addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.INTENT, intentName);
             // remove first line from chunk
             chunkSplitByLine.splice(0,1);
-            chunkSplitByLine.forEach(function(utterance){
+            chunkSplitByLine.forEach(function(utterance)
+            {
+                // is this a pattern? 
+                if(utterance.trim().indexOf("~") === 0) {
+                    // push this utterance to patterns
+                    var patternObject = {
+                        "text": utterance.slice(1),
+                        "intent": intentName
+                    }
+                    LUISJsonStruct.patterns.push(patternObject);
+                    if(utterance.includes("{")) {
+                        // handle entities
+                        var entityRegex = new RegExp(/\{(.*?)\}/g);
+                        var entitiesFound = utterance.match(entityRegex);
+                        entitiesFound.forEach(function(entity) {
+                            entity = entity.replace("{", "").replace("}", "");
+                            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.PATTERNANYENTITY, entity);
+                        });
+                    }
+                } else {
+                    if(utterance.includes("{")) {
+                        var entityRegex = new RegExp(/\{(.*?)\}/g);
+                        var entitiesFound = utterance.match(entityRegex);
+                    
+                        // treat this as labelled utterance
+                        entitiesFound.forEach(function(entity) {
+                            var labelledValue = "";
+                            entity = entity.replace("{", "").replace("}", "");
+                            // see if this is a trained simple entity of format {entityName:labelled value}
+                            if(entity.includes(":")) {
+                                var entitySplit = entity.split(":");
+                                entity = entitySplit[0];
+                                labelledValue = entitySplit[1];
+                            }
+                            if(labelledValue !== "") {
+                                // add this to entities collection unless it already exists
+                                addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entity);
+                                // clean up uttearnce to only include labelledentityValue and add to utterances collection
+                                var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
+                                var startPos = updatedUtterance.search(labelledValue);
+                                var endPos = startPos + labelledValue.length - 1;
+                                var utteranceObject = {
+                                    "text": updatedUtterance,
+                                    "intent":intentName,
+                                    "entities": [
+                                        {
+                                            "entity": entity,
+                                            "startPos":startPos,
+                                            "endPos":endPos
+                                        }
+                                    ]
+                                }
+                                LUISJsonStruct.utterances.push(utteranceObject);
+                            } else {
+                                if(!log) console.log('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance);
+                            }
+                        });
+                    } else {
+                        // push this to utterances
+                        var utteranceObject = {
+                            "text": utterance,
+                            "intent": intentName,
+                            "entities": new Array()
+                        }
+                        LUISJsonStruct.utterances.push(utteranceObject);
+                    }
+                }
                 // if utterance contains an entity, push that to patternEntity
-                if(utterance.includes("{")) {
+                /*if(utterance.includes("{")) {
                     var entityRegex = new RegExp(/\{(.*?)\}/g);
                     var entitiesFound = utterance.match(entityRegex);
                     // handle all entity matches in the utterance
@@ -225,10 +282,9 @@ var parseFile = function(fileContent)
                     });
                 } else {
                     if(utterance.trim().indexOf("~") === 0) {
-                        uttearnce = utterance.slice(1);
                         // push this utterance to patterns
                         var patternObject = {
-                            "text": utterance,
+                            "text": utterance.slice(1),
                             "intent": intentName
                         }
                         LUISJsonStruct.patterns.push(patternObject);
@@ -242,7 +298,7 @@ var parseFile = function(fileContent)
                         LUISJsonStruct.utterances.push(utteranceObject);
                     }
                     
-                }
+                }*/
             });
         } else if(chunk.indexOf(PARSERCONSTS.ENTITY) === 0) {
             // we have an entity definition
@@ -377,10 +433,11 @@ var addItemIfNotPresent = function(collection, type, value) {
         }
     }
     if(!hasValue) {
-        var entityObject = {
-            "name": value,
-            "roles": new Array()
+        var itemObj = {};
+        itemObj.name = value;
+        if(type !== LUISObjNameEnum.INTENT) {
+            itemObj.roles = new Array();
         }
-        collection[type].push(entityObject);
+        collection[type].push(itemObj);
     }  
 }

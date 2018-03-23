@@ -19,7 +19,9 @@ you can call me {e:vishwac}
 
 $e:simple
 
+$alarmTime:datetimeV2
+
 #CreateAlarm
-create an alarm
-create an alarm for {alarmTime}
-set an alarm for {alarmTime}
+~create an alarm
+~create an alarm for {alarmTime}
+~set an alarm for {alarmTime}

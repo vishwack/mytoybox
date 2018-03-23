@@ -20,14 +20,14 @@ you can call me {e:vishwac}
 $e:simple
 
 #CreateAlarm
-create an alarm
-create an alarm for {addTime}
-set an alarm for {addTime}
+~create an alarm
+~create an alarm for {addTime}
+~set an alarm for {addTime}
 
 $addTime:datetimeV2
 
 #DeleteAlarm
-delete alarm
-(delete|remove) the {remTime} alarm
+~delete alarm
+~(delete|remove) the {remTime} alarm
 
 $remTime:datetimeV2
