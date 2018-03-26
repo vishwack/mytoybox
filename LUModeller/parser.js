@@ -38,13 +38,13 @@ module.exports = {
         var finalJSON = collateFiles(allParsedContent);
         if(!program.versionId) program.versionId = "0.1";
         if(!program.luis_schema_version) program.luis_schema_version = "2.1.0";
-        if(!program.name) program.name = "myLUISApp";
+        if(!program.lName) program.lName = "myLUISApp";
         if(!program.desc) program.desc = "";
         if(!program.culture) program.culture = "en-us";   
 
         finalJSON.luis_schema_version = program.luis_schema_version;
         finalJSON.versionId = program.versionId;
-        finalJSON.name = program.name,
+        finalJSON.name = program.lName,
         finalJSON.desc = program.desc;
         finalJSON.culture = program.culture;
         
@@ -96,6 +96,23 @@ var collateFiles = function(parsedBlobs) {
                 }
                 if(!prebuiltTypeExists) {
                     FinalLUISJSON.prebuiltEntities.push(prebuiltEntity);
+                }
+            });
+        }
+        // do we have model_features?
+        if(blob.model_features.length > 0) {
+            blob.model_features.forEach(function(modelFeature) {
+                var modelFeatureExists = false;
+                for(fIndex in FinalLUISJSON.model_features) {
+                    if(modelFeature.name === FinalLUISJSON.model_features[fIndex].name) {
+                        // add values to the existing model feature
+                        FinalLUISJSON.model_features[fIndex].words += "," + modelFeature.words;
+                        modelFeatureExists = true;
+                        break;
+                    }
+                }
+                if(!modelFeatureExists) {
+                    FinalLUISJSON.model_features.push(modelFeature);
                 }
             });
         }
@@ -235,70 +252,6 @@ var parseFile = function(fileContent, log)
                         LUISJsonStruct.utterances.push(utteranceObject);
                     }
                 }
-                // if utterance contains an entity, push that to patternEntity
-                /*if(utterance.includes("{")) {
-                    var entityRegex = new RegExp(/\{(.*?)\}/g);
-                    var entitiesFound = utterance.match(entityRegex);
-                    // handle all entity matches in the utterance
-                    entitiesFound.forEach(function(entity) {
-                        var labelledValue = "";
-                        entity = entity.replace("{", "").replace("}", "");
-                        // see if this is a trained simple entity of format {entityName:labelled value}
-                        if(entity.includes(":")) {
-                            var entitySplit = entity.split(":");
-                            entity = entitySplit[0];
-                            labelledValue = entitySplit[1];
-                        }
-                        if(labelledValue !== "") {
-                            // add this to entities collection unless it already exists
-                            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entity);
-                            // clean up uttearnce to only include labelledentityValue and add to utterances collection
-                            var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
-                            var startPos = updatedUtterance.search(labelledValue);
-                            var endPos = startPos + labelledValue.length - 1;
-                            var utteranceObject = {
-                                "text": updatedUtterance,
-                                "intent":intentName,
-                                "entities": [
-                                    {
-                                        "entity": entity,
-                                        "startPos":startPos,
-                                        "endPos":endPos
-                                    }
-                                ]
-                            }
-                            LUISJsonStruct.utterances.push(utteranceObject);
-                        } else {
-                            // these need to be treated as pattern entity
-                            // see if we already have this in patternAny entity collection
-                            addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.PATTERNANYENTITY, entity);
-                            // add the utterance to patterns
-                            var patternObject = {
-                                "text": utterance,
-                                "intent": intentName
-                            }
-                            LUISJsonStruct.patterns.push(patternObject);
-                        }
-                    });
-                } else {
-                    if(utterance.trim().indexOf("~") === 0) {
-                        // push this utterance to patterns
-                        var patternObject = {
-                            "text": utterance.slice(1),
-                            "intent": intentName
-                        }
-                        LUISJsonStruct.patterns.push(patternObject);
-                    } else {
-                        // push this to utterances
-                        var utteranceObject = {
-                            "text": utterance,
-                            "intent":intentName,
-                            "entities": new Array()
-                        }
-                        LUISJsonStruct.utterances.push(utteranceObject);
-                    }
-                    
-                }*/
             });
         } else if(chunk.indexOf(PARSERCONSTS.ENTITY) === 0) {
             // we have an entity definition
@@ -341,7 +294,7 @@ var parseFile = function(fileContent, log)
             }
 
             // is this a list type?
-            if(entityType.toLowerCase() === 'list') {
+            else if(entityType.toLowerCase() === 'list') {
                 // remove the first entity declaration line
                 chunkSplitByLine.splice(0,1);
                 var closedListObj = {};
@@ -402,6 +355,44 @@ var parseFile = function(fileContent, log)
             } else if(entityType.toLowerCase() === 'simple') {
                 // add this to entities if it doesnt exist
                 addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entityName);
+            } else if(entityType.toLowerCase() === 'phraselist') {
+                // add this to phraseList if it doesnt exist
+                chunkSplitByLine.splice(0,1);
+                var pLValues = "";
+                chunkSplitByLine.forEach(function(phraseListValues) {
+                    pLValues = pLValues + phraseListValues + ',';
+                });
+                // remove the last ',' 
+                pLValues = pLValues.substring(0, pLValues.lastIndexOf(","));
+                var modelExists = false;
+                if(LUISJsonStruct.model_features.length > 0) {
+                    var modelIdx = 0;
+                    for(modelIdx in LUISJsonStruct.model_features) {
+                        if(LUISJsonStruct.model_features[modelIdx].name === entityName) {
+                            modelExists = true;
+                            break;
+                        }
+                    }
+                    if(modelExists) {
+                        LUISJsonStruct.model_features[modelIdx].words += ',' + pLValues;
+                    } else {
+                        var modelObj = {
+                            "name": entityName,
+                            "mode": false,
+                            "words": pLValues,
+                            "activated": true
+                        };
+                        LUISJsonStruct.model_features.push(modelObj);
+                    }
+                } else {
+                    var modelObj = {
+                        "name": entityName,
+                        "mode": false,
+                        "words": pLValues,
+                        "activated": true
+                    };
+                    LUISJsonStruct.model_features.push(modelObj);
+                }
             }
         } 
     });
