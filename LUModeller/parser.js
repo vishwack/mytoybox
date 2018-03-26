@@ -122,7 +122,7 @@ var collateQnAFiles = function(parsedBlobs) {
         // does this blob have qnapairs?
         if(blob.qnaPairs.length > 0) {
             // walk through each qnaPair and add it if the question does not exist
-            blobs.qnaPairs.forEach(function(qnaPair) {
+            blob.qnaPairs.forEach(function(qnaPair) {
                 var qnaExists = false;
                 var fIndex = 0;
                 for(fIndex in FinalQnAJSON.qnaPairs) {
@@ -511,6 +511,12 @@ var parseFile = function(fileContent, log)
                 };
                 qnaJsonStruct.qnaPairs.push(qnaObj);
             });
+        } else {
+            //error. No Parser decoration found
+            if(!log) {
+                console.error('ERROR: No parser decoration found. Sections need to start with # or $ or ? or #ref or #url');
+                console.error(chunk.toString());
+            }
         } 
     });
     return {
