@@ -8,4 +8,4 @@ You can use our REST apis to manage your KB. See here for details: https://westu
 ?get me your ceo info
 Vishwac Sena Kannan
 
-#urlref('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
+#url('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
