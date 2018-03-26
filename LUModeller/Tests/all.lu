@@ -9,29 +9,37 @@ help
 I need help
 please help
 
-#WhoAreYou
-who are you?
-what is your name?
-how should i address you?
-
 #AskForUserName
-{userName}
-I'm {userName}
-call me {userName}
-my name is {userName}
-{userName} is my name
-you can call me {userName}
+{e:vishwac}
+I'm {e:vishwac}
+call me {e:vishwac}
+my name is {e:vishwac}
+{e:vishwac} is my name
+you can call me {e:vishwac}
+
+$e:simple
 
 #CreateAlarm
-create an alarm
-create an alarm for {alarmTime}
-set an alarm for {alarmTime}
+~create an alarm
+~create an alarm for {addTime}
+~set an alarm for {addTime}
 
-$alarmTime:datetime
+$addTime:datetimeV2
+
+#DeleteAlarm
+~delete alarm
+~(delete|remove) the {remTime} alarm
+
+$remTime:datetimeV2
+
+$commPreference:list
+fax:
+	fax
+	fascimile
 
 #CommunicationPreference
-set {commPreference} as my communication preference
-I prefer to receive {commPreference}
+~set {commPreference} as my communication preference
+~I prefer to receive {commPreference}
 
 $commPreference:list
 call:
@@ -41,10 +49,29 @@ call:
 	call
 	cell phone
 	phone
+
+#Help
+can you help
+
+$commPreference:list
 text:
 	message
 	text
 	sms
 	text message
 
-#ref('./none.lu')
+#ref('./Tests/none.lu')
+
+#ref('./Tests/buyChocolate.lu')
+
+?How can I change the default message from QnA Maker?
+You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
+
+?How do I programmatically update my KB?
+You can use our REST apis to manage your KB. See here for details: https://westus.dev.cognitive.microsoft.com/docs/services/58994a073d9e04097c7ba6fe/operations/58994a073d9e041ad42d9baa
+
+?Who is your ceo?
+?get me your ceo info
+Vishwac Sena Kannan
+
+#urlref('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')

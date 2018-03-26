@@ -1,29 +1,32 @@
 const fs = require('fs');
+const path = require('path');
 
 module.exports = {
     handleFile(rootFile, program) {
         // handle root file and subseqntly own calling parse on other files found in rootFile
         var filesToParse = [rootFile];
-        var allParsedContent = new Array();
+        var allParsedLUISContent = new Array();
+        var allParsedQnAContent = new Array();
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
             fs.stat(file, (err, stats) => {
                 if(err) {
-                    console.log('Sorry unable to open [' + file + ']');        
+                    console.error('Sorry unable to open [' + file + ']');        
                     return;
                 }
             });
             var fileContent = fs.readFileSync(file);
             if (!fileContent) {
-                console.log('Sorry, error reading file:' + file);    
+                console.error('Sorry, error reading file:' + file);    
             }
             if(!program.quiet) console.log('---Parsing file: ' + file);
             var parsedContent = parseFile(fileContent, program.quiet);
             if (!parsedContent) {
-                console.log('Sorry, file ' + file + 'had invalid content');
+                console.error('Sorry, file ' + file + 'had invalid content');
             } else {
                 if(!program.quiet)console.log('---Parsing complete: ' + file);
-                allParsedContent.push(parsedContent.LUISBlob);
+                allParsedLUISContent.push(parsedContent.LUISBlob);
+                allParsedQnAContent.push(parsedContent.QnABlob);
             }
             // remove this file from the list
             filesToParse.splice(0,1);
@@ -35,24 +38,108 @@ module.exports = {
                 if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
             }
         }
-        var finalJSON = collateFiles(allParsedContent);
+        var finalLUISJSON = collateLUISFiles(allParsedLUISContent);
+        var finalQnAJSON = collateQnAFiles(allParsedQnAContent);
         if(!program.versionId) program.versionId = "0.1";
         if(!program.luis_schema_version) program.luis_schema_version = "2.1.0";
-        if(!program.lName) program.lName = "myLUISApp";
+        if(!program.lName) program.lName = path.basename(rootFile, path.extname(rootFile));
         if(!program.desc) program.desc = "";
         if(!program.culture) program.culture = "en-us";   
+        if(!program.qName) program.qName = path.basename(rootFile, path.extname(rootFile));
+        finalLUISJSON.luis_schema_version = program.luis_schema_version;
+        finalLUISJSON.versionId = program.versionId;
+        finalLUISJSON.name = program.lName,
+        finalLUISJSON.desc = program.desc;
+        finalLUISJSON.culture = program.culture;
 
-        finalJSON.luis_schema_version = program.luis_schema_version;
-        finalJSON.versionId = program.versionId;
-        finalJSON.name = program.lName,
-        finalJSON.desc = program.desc;
-        finalJSON.culture = program.culture;
-        
-        console.log(JSON.stringify(finalJSON, null, 2));
-        
+        finalQnAJSON.name = program.qName;
+        if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
+        if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
+        var writeQnAFile = (finalQnAJSON.qnaPairs.length > 0) || 
+                           (finalQnAJSON.urls.length > 0);
+
+        var  writeLUISFile = (finalLUISJSON[LUISObjNameEnum.INTENT].length > 0) ||
+                             (finalLUISJSON[LUISObjNameEnum.ENTITIES].length > 0) || 
+                             (finalLUISJSON[LUISObjNameEnum.PATTERNANYENTITY].length > 0) ||
+                             (finalLUISJSON[LUISObjNameEnum.CLOSEDLISTS].length > 0) ||
+                             (finalLUISJSON.patterns.length > 0) ||
+                             (finalLUISJSON.utterances.length > 0) ||
+                             (finalLUISJSON.bing_entities.length > 0) ||
+                             (finalLUISJSON.prebuiltEntities.length > 0) ||
+                             (finalLUISJSON.model_features.length > 0);
+
+        if(!program.quiet) {
+            if(writeLUISFile) {
+                console.log('-----------------------------------');
+                console.log('          FINAL LUIS JSON          ');
+                console.log('-----------------------------------');
+                console.log(JSON.stringify(finalLUISJSON, null, 2));
+                console.log();    
+            }
+            if(writeQnAFile) {
+                console.log('-----------------------------------');
+                console.log('          FINAL QnA JSON          ');
+                console.log('-----------------------------------');
+                console.log(JSON.stringify(finalQnAJSON, null, 2));
+            }
+        }
+
+        if(writeLUISFile) {
+            // write out the final LUIS Json
+            fs.writeFileSync(program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
+                if(error) {
+                    console.error('Unable to write LUIS JSON file - ' + program.lOutFile);
+                } 
+            });
+            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.lOutFile);
+        }
+
+        if(writeQnAFile) {
+            // write out the final LUIS Json
+            fs.writeFileSync(program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
+                if(error) {
+                    console.error('Unable to write LUIS JSON file - ' + program.qOutFile);
+                } 
+            });
+            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.qOutFile);
+        }
     }
 };
-var collateFiles = function(parsedBlobs) {
+var collateQnAFiles = function(parsedBlobs) {
+    var FinalQnAJSON = parsedBlobs[0];
+    parsedBlobs.splice(0,1);
+    parsedBlobs.forEach(function(blob) {
+        // does this blob have URLs?
+        if(blob.urls.length > 0) {
+            // add this url if this does not already exist in finaljson
+            blob.urls.forEach(function(qnaUrl) {
+                if(!FinalQnAJSON.urls.includes(qnaUrl)) {
+                    FinalQnAJSON.urls.push(qnaUrl);
+                }
+            });
+        }
+
+        // does this blob have qnapairs?
+        if(blob.qnaPairs.length > 0) {
+            // walk through each qnaPair and add it if the question does not exist
+            blobs.qnaPairs.forEach(function(qnaPair) {
+                var qnaExists = false;
+                var fIndex = 0;
+                for(fIndex in FinalQnAJSON.qnaPairs) {
+                    if(qnaPair.question === FinalQnAJSON.qnaPairs[fIndex].question) {
+                        qnaExists = true;
+                        break;
+                    }
+                }
+                if(!qnaExists) {
+                    FinalQnAJSON.qnaPairs.push(qnaPair);
+                }
+            });
+        }
+    });
+    return FinalQnAJSON;
+}
+var collateLUISFiles = function(parsedBlobs) {
     var FinalLUISJSON = parsedBlobs[0];
     parsedBlobs.splice(0,1);
     parsedBlobs.forEach(function(blob) {
@@ -167,13 +254,21 @@ var parseFile = function(fileContent, log)
         "patternAnyEntities": new Array(),
         "prebuiltEntities": new Array()
     };
+    var qnaJsonStruct = {
+        "qnaPairs": new Array(),
+        "urls": new Array()
+    }
     // split on blank lines
     var splitOnBlankLines = fileContent.toString().split(/\n\s*\n|\r\n\s*\r\n/);
     // loop through every chunk of information
     splitOnBlankLines.forEach(function(chunk) {
         // is this an intent or entity?
         chunk = chunk.trim();
-        if(chunk.indexOf(PARSERCONSTS.FILEREF) === 0) {
+        if(chunk.indexOf(PARSERCONSTS.URLREF) === 0) {
+            var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
+            var urlRef = chunkSplitByLine[0].replace(PARSERCONSTS.URLREF + "('", '').replace(")",'').replace("'",'');
+            qnaJsonStruct.urls.push(urlRef);
+        } else if(chunk.indexOf(PARSERCONSTS.FILEREF) === 0) {
             var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
             var fileRef = chunkSplitByLine[0].replace(PARSERCONSTS.FILEREF + "('", '').replace(")",'').replace("'",'');
             additionalFilesToParse.push(fileRef);
@@ -394,11 +489,34 @@ var parseFile = function(fileContent, log)
                     LUISJsonStruct.model_features.push(modelObj);
                 }
             }
+        } else if(chunk.indexOf(PARSERCONSTS.QNA) === 0) {
+            // split contents in this chunk by newline
+            var chunkSplitByLine = chunk.split(/\r\n|\r|\n/g);
+            var qnaQuestions = new Array();
+            var qnaAnswer = "";
+            chunkSplitByLine.forEach(function (qnaLine) {
+                qnaLine = qnaLine.trim();
+                // is this a question or answer?
+                if(qnaLine.indexOf(PARSERCONSTS.QNA) === 0) {
+                    qnaQuestions.push(qnaLine.replace(PARSERCONSTS.QNA, '').trim());
+                } else {
+                    qnaAnswer = qnaLine;
+                }
+            });
+            // for each question, add a qna pair
+            qnaQuestions.forEach(function(qnaQuestion) {
+                var qnaObj = {
+                    "answer": qnaAnswer,
+                    "question": qnaQuestion
+                };
+                qnaJsonStruct.qnaPairs.push(qnaObj);
+            });
         } 
     });
     return {
         "fParse": additionalFilesToParse,
-        "LUISBlob": LUISJsonStruct
+        "LUISBlob": LUISJsonStruct,
+        "QnABlob": qnaJsonStruct
     };
     
 }
@@ -412,7 +530,9 @@ const LUISObjNameEnum = {
 const PARSERCONSTS = {
     FILEREF: "#ref",
     INTENT: "#",
-    ENTITY: "$"
+    ENTITY: "$",
+    QNA: "?",
+    URLREF: "#url"
 }
 
 var addItemIfNotPresent = function(collection, type, value) {
