@@ -56,6 +56,147 @@ set an alarm for {alarmTime}
 ```
 \{alarmTime\} is the entity that can take "tomorrow, 7AM", "8PM", "7AM, every weekday" etc.
 
+You can also create an entity with a labelled value. Here's an example of how to do that.
+
+```
+#CreateAlarm
+create an alarm for {alarmTime:7AM}
+set an alarm for {alarmTime:7AM}
+```
+
+LUModeller tool supports the following [LUIS entity types](https://docs.microsoft.com/en-us/azure/cognitive-services/LUIS/luis-concept-entity-types)
+- Prebuilt ("datetimeV2", "age", "dimension", "email", "money", "number", "ordinal", "percentage", "phoneNumber","temperature", "url")
+- List
+- Simple
+
+LUModeller tool *does not* support the following LUIS entity types:
+- Regular expression
+- Hierarchical
+- Composite
+
+You can define an entity type by using the $\<entityName\>:\<entityType\> notation. Here's an example: 
+
+```
+#CreateAlarm
+create an alarm for {alarmTime:7AM}
+set an alarm for {alarmTime:7AM}
+
+$alarmTime:Simple
+```
+
+You can describe list entites using the following notation:
+$listEntity:list
+\<itemName\>
+    \<synonym1\>
+    \<synonym2\>
+
+Here's an example definition of a list entity: 
+
+```
+$commPreference:list
+call:
+	phone call
+	give me a ring
+	ring
+	call
+	cell phone
+	phone
+text:
+	message
+	text
+	sms
+	text message
+```
+
+You can also enhance LUIS understanding of your model using [PhraseLists](https://docs.microsoft.com/en-us/azure/cognitive-services/LUIS/luis-tutorial-interchangeable-phrase-list)
+
+Here's an example of a phrase list definition:
+
+```
+$ChocolateType:phraseList
+m&m,mars,mints,spearmings,payday,jelly,kit kat,kitkat,twix
+```
+
+### Patterns
+Patterns are a new feature in LUIS that allows you to define a set of rules that augment the machine learned model. You can define patterns in the .lu file by prefixing the utterance with '~'. Here's an example: 
+
+```
+#DeleteAlarm
+~delete alarm
+~(delete|remove) the {alarmTime} alarm
+```
+
+Note: By default any entity that is left undescribed in a pattern will be mapped to Pattern.Any entity type.
+
+### Roles
+Entities can have roles. You can define roles for entities using the $\<entityRole\>:\<entityType\> notation. Here's an example where both addTime and remTime are roles of the datetimeV2 entity: 
+
+```
+#CreateAlarm
+~create an alarm
+~create an alarm for {addTime}
+~set an alarm for {addTime}
+
+$addTime:datetimeV2
+
+#DeleteAlarm
+~delete alarm
+~(delete|remove) the {remTime} alarm
+
+$remTime:datetimeV2
+```
+
+### Question and Answer pairs
+.lu file (and the parser) supports question and answer definitions as well. You can this notation to describe them
+?\<question\>
+\<answer\>
+
+Here's an example of question and answer definitions. The LUModeller tool will automatically separate question and answers into a qnamaker JSON file that you can then use to create your new [QnaMaker.ai](http://qnamaker.ai) knowledge base article.
+
+```
+?How can I change the default message from QnA Maker?
+You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
+
+?How do I programmatically update my KB?
+You can use our REST apis to manage your KB. See here for details: https://westus.dev.cognitive.microsoft.com/docs/services/58994a073d9e04097c7ba6fe/operations/58994a073d9e041ad42d9baa
+
+?Who is your name?
+?What should I call you?
+I'm the echoBot! Nice to meet you.
+```
+
+### External references
+Two different references are supported in the .lu file:
+- Reference to another .lu file via #ref('\<.lu file name\>')
+- Reference to URL for QnAMaker to ingest during KB creation via #url('\<URL\>')
+
+Here's an example of those references: 
+
+```
+?How can I change the default message from QnA Maker?
+You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
+
+#url('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
+
+#ref('./none.lu')
+```
+
+### Adding comments
+You can add comments to your .lu document by prefixing the comment with //. Here's an example: 
+
+```
+// This is a comment and will be ignored
+
+#Greeting
+hi
+hello
+```
+
+You can also add comments in a line. All text after // will be ignored and treated as a comment.
+
+
+
+
 
 
 
