@@ -42,6 +42,7 @@ A blank line is used to delimit different sections and is also useful for improv
 
 ### Entity
 An entity represents detailed information that is relevant in the utterance. For example, in the utterance "Book a ticket to Paris", "Paris" is a location. 
+
 |Sample user utterance|entity|
 |--------------------------|----------|
 |"Book a flight to **Seattle**?"|Seattle|
