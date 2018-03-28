@@ -3,6 +3,7 @@ Imagine a world where you can quickly author language understanding components f
 - Describe intents, entities, utterances and patterns for your bot in simple markdown documents
 - The langauge understanding definition for your bot lives with the rest of your code. You can use other CLI tools like luis to create a new LUIS app using the .lu files
 - Group language understanding documents by langauge x locale for easier to manage localization purposes.
+- Define question and answer pairs for your bot.
 
 The LUModeller tool converts .lu files to a LUIS model json file.
 
