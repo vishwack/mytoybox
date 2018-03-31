@@ -20,17 +20,17 @@ you can call me {e:vishwac}
 $e:simple
 
 #CreateAlarm
-~create an alarm
-~create an alarm for {addTime}
-~set an alarm for {addTime}
+create an alarm
+create an alarm for {addTime}
+set an alarm for {addTime}
 
-$addTime:datetimeV2
+
 
 #DeleteAlarm
-~delete alarm
-~(delete|remove) the {remTime} alarm
+delete alarm
+(delete|remove) the {remTime} alarm
 
-$remTime:datetimeV2
+
 
 $commPreference:list
 fax:
@@ -38,8 +38,8 @@ fax:
 	fascimile
 
 #CommunicationPreference
-~set {commPreference} as my communication preference
-~I prefer to receive {commPreference}
+set phone call as my communication preference
+I prefer to receive text
 
 $commPreference:list
 call:

@@ -264,7 +264,6 @@ var parseFile = function(fileContent, log)
     splitOnBlankLines.forEach(function(chunk) {
         // is this an intent or entity?
         chunk = chunk.trim();
-        console.log(chunk.indexOf(PARSERCONSTS.COMMENT) + '------' + chunk);
         // ignore if this line is a comment.
 
         // TODO: ignore inline comments
@@ -318,28 +317,30 @@ var parseFile = function(fileContent, log)
                                     var entitySplit = entity.split(":");
                                     entity = entitySplit[0];
                                     labelledValue = entitySplit[1];
-                                }
-                                if(labelledValue !== "") {
-                                    // add this to entities collection unless it already exists
-                                    addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entity);
-                                    // clean up uttearnce to only include labelledentityValue and add to utterances collection
-                                    var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
-                                    var startPos = updatedUtterance.search(labelledValue);
-                                    var endPos = startPos + labelledValue.length - 1;
-                                    var utteranceObject = {
-                                        "text": updatedUtterance,
-                                        "intent":intentName,
-                                        "entities": [
-                                            {
-                                                "entity": entity,
-                                                "startPos":startPos,
-                                                "endPos":endPos
-                                            }
-                                        ]
+                                    if(labelledValue !== "") {
+                                        // add this to entities collection unless it already exists
+                                        addItemIfNotPresent(LUISJsonStruct, LUISObjNameEnum.ENTITIES, entity);
+                                        // clean up uttearnce to only include labelledentityValue and add to utterances collection
+                                        var updatedUtterance = utterance.replace("{" + entity + ":" + labelledValue + "}", labelledValue);
+                                        var startPos = updatedUtterance.search(labelledValue);
+                                        var endPos = startPos + labelledValue.length - 1;
+                                        var utteranceObject = {
+                                            "text": updatedUtterance,
+                                            "intent":intentName,
+                                            "entities": [
+                                                {
+                                                    "entity": entity,
+                                                    "startPos":startPos,
+                                                    "endPos":endPos
+                                                }
+                                            ]
+                                        }
+                                        LUISJsonStruct.utterances.push(utteranceObject);
+                                    } else {
+                                        if(!log) console.log('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance);
                                     }
-                                    LUISJsonStruct.utterances.push(utteranceObject);
                                 } else {
-                                    if(!log) console.log('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance);
+                                    if(!log)  console.log('WARN: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value');
                                 }
                             });
                         } else {
@@ -371,26 +372,29 @@ var parseFile = function(fileContent, log)
                 // add this entity to appropriate place
                 // is this a builtin type? 
                 if(builtInTypes.includes(entityType)) {
-                    LUISJsonStruct.bing_entities.push(entityType);
-                    // add to prebuilt entities if this does not already exist there.
-                    var lMatch = true;
-                    for(var i in LUISJsonStruct.prebuiltEntities) {
-                        if(LUISJsonStruct.prebuiltEntities[i].type === entityType) {
-                            // add the entityName as a role if it does not already exist
-                            if(!LUISJsonStruct.prebuiltEntities[i].roles.includes(entityName)) {
-                                LUISJsonStruct.prebuiltEntities[i].roles.push(entityName);
-                            } 
-                            lMatch = false;
-                            break;
+                    // add to bing_entities if it does not exist there.
+                    if(!LUISJsonStruct.bing_entities.includes(entityType)) LUISJsonStruct.bing_entities.push(entityType);
+                    if(entityName !== "PREBUILT") {
+                        // add to prebuilt entities if this does not already exist there and if this is not PREBUILT
+                        var lMatch = true;
+                        for(var i in LUISJsonStruct.prebuiltEntities) {
+                            if(LUISJsonStruct.prebuiltEntities[i].type === entityType) {
+                                // add the entityName as a role if it does not already exist
+                                if(!LUISJsonStruct.prebuiltEntities[i].roles.includes(entityName)) {
+                                    LUISJsonStruct.prebuiltEntities[i].roles.push(entityName);
+                                } 
+                                lMatch = false;
+                                break;
+                            }
                         }
+                        if(lMatch) {
+                            var prebuiltEntitesObj = {
+                                "type": entityType,
+                                "roles": [entityName]
+                            };
+                            LUISJsonStruct.prebuiltEntities.push(prebuiltEntitesObj);
+                        } 
                     }
-                    if(lMatch) {
-                        var prebuiltEntitesObj = {
-                            "type": entityType,
-                            "roles": [entityName]
-                        };
-                        LUISJsonStruct.prebuiltEntities.push(prebuiltEntitesObj);
-                    } 
                 }
     
                 // is this a list type?
