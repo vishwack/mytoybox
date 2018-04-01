@@ -18,14 +18,11 @@ module.exports = {
         var allParsedQnAContent = new Array();
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
-            fs.stat(file, (err, stats) => {
-                if(err) {
-                    process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
-                    process.exit(1);
-                }
-            });
-            
-            var fileContent = fs.readFileSync(file);
+            if(!fs.existsSync(file)) {
+                process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
+                process.exit(1);
+            }
+            var fileContent = fs.readFileSync(file,'utf8');
             if (!fileContent) {
                 process.stdout.write(chalk.red('Sorry, error reading file:' + file + '\n'));    
                 process.exit(1);
