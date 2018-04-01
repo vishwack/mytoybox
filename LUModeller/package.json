@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/vishwacsena/mytoybox#readme",
   "dependencies": {
+    "chalk": "^2.3.2",
     "commander": "^2.15.0",
     "nearley": "^2.13.0"
   }

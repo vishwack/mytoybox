@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const chalk = require('chalk');
 
 module.exports = {
+    /**
+     * handle parsing the root file that was passed in command line args
+     *
+     * @param {string} rootFile Path to the root file passed in command line
+     * @param {object} program content flushed out by commander
+     */
     handleFile(rootFile, program) {
         // handle root file and subseqntly own calling parse on other files found in rootFile
         var filesToParse = [rootFile];
@@ -11,20 +18,21 @@ module.exports = {
             var file = filesToParse[0];
             fs.stat(file, (err, stats) => {
                 if(err) {
-                    console.error('Sorry unable to open [' + file + ']');        
-                    return;
+                    process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
+                    process.exit(1);
                 }
             });
             var fileContent = fs.readFileSync(file);
             if (!fileContent) {
-                console.error('Sorry, error reading file:' + file);    
+                process.stdout.write(chalk.red('Sorry, error reading file:' + file + '\n'));    
+                process.exit(1);
             }
-            if(!program.quiet) console.log('---Parsing file: ' + file);
+            if(!program.quiet) process.stdout.write(chalk.cyan('Parsing file: ' + file + '\n'));
             var parsedContent = parseFile(fileContent, program.quiet);
             if (!parsedContent) {
-                console.error('Sorry, file ' + file + 'had invalid content');
+                process.stdout.write(chalk.red('Sorry, file ' + file + 'had invalid content\n'));
+                process.exit(1);
             } else {
-                if(!program.quiet)console.log('---Parsing complete: ' + file);
                 allParsedLUISContent.push(parsedContent.LUISBlob);
                 allParsedQnAContent.push(parsedContent.QnABlob);
             }
@@ -33,9 +41,6 @@ module.exports = {
             // add additional files to parse to the list
             if(parsedContent.fParse.length > 0) {
                 parsedContent.fParse.forEach((file) => filesToParse.push(file));
-            }
-            if(filesToParse.length > 0) {
-                if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
             }
         }
         var finalLUISJSON = collateLUISFiles(allParsedLUISContent);
@@ -51,7 +56,6 @@ module.exports = {
         finalLUISJSON.name = program.lName,
         finalLUISJSON.desc = program.desc;
         finalLUISJSON.culture = program.culture;
-
         finalQnAJSON.name = program.qName;
         if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
         if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
@@ -70,17 +74,16 @@ module.exports = {
 
         if(!program.quiet) {
             if(writeLUISFile) {
-                console.log('-----------------------------------');
-                console.log('          FINAL LUIS JSON          ');
-                console.log('-----------------------------------');
-                console.log(JSON.stringify(finalLUISJSON, null, 2));
-                console.log();    
+                process.stdout.write(chalk.gray('-----------------------------------\n'));
+                process.stdout.write(chalk.gray('|         FINAL LUIS JSON         |\n'));
+                process.stdout.write(chalk.gray('-----------------------------------\n'));
+                process.stdout.write(chalk.gray(JSON.stringify(finalLUISJSON, null, 2) + '\n'));
             }
             if(writeQnAFile) {
-                console.log('-----------------------------------');
-                console.log('          FINAL QnA JSON          ');
-                console.log('-----------------------------------');
-                console.log(JSON.stringify(finalQnAJSON, null, 2));
+                process.stdout.write(chalk.gray('-----------------------------------\n'));
+                process.stdout.write(chalk.gray('|         FINAL QnA JSON          |\n'));
+                process.stdout.write(chalk.gray('-----------------------------------\n'));
+                process.stdout.write(chalk.gray(JSON.stringify(finalQnAJSON, null, 2) + '\n'));
             }
         }
 
@@ -88,23 +91,24 @@ module.exports = {
             // write out the final LUIS Json
             fs.writeFileSync(program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
                 if(error) {
-                    console.error('Unable to write LUIS JSON file - ' + program.lOutFile);
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + program.lOutFile + '\n'));
                 } 
             });
-            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.lOutFile);
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + program.lOutFile + '\n'));
         }
 
         if(writeQnAFile) {
             // write out the final LUIS Json
             fs.writeFileSync(program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
                 if(error) {
-                    console.error('Unable to write LUIS JSON file - ' + program.qOutFile);
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + program.qOutFile + '\n'));
                 } 
             });
-            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.qOutFile);
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + program.qOutFile + '\n'));
         }
     }
 };
+
 var collateQnAFiles = function(parsedBlobs) {
     var FinalQnAJSON = parsedBlobs[0];
     parsedBlobs.splice(0,1);
@@ -228,21 +232,21 @@ var validateAndPushCurrentBuffer = function(previousSection, sectionsInFile, cur
         case PARSERCONSTS.INTENT:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                console.warn(lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0]);
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;
         case PARSERCONSTS.QNA:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                console.warn(lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0]);
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;
         case PARSERCONSTS.ENTITY:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                console.warn(lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0]);
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;
@@ -329,8 +333,8 @@ var splitFileBySections = function(fileContent) {
                     currentSectionType = null;
                 }
             } else {
-                console.log('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA');
-                console.log('Stopping further processing.');
+                process.stdout.write(chalk.red('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA \n'));
+                process.stdout.write(chalk.red('Stopping further processing.\n'));
                 process.exit(1);
             }
         }
@@ -340,8 +344,6 @@ var splitFileBySections = function(fileContent) {
         var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
         sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
     }
-    console.log('FINAL SECTIONS IN FILE');
-    console.log(JSON.stringify(sectionsInFile, null, 2));
     return sectionsInFile;
 }
 var parseFile = function(fileContent, log) 
@@ -458,10 +460,10 @@ var parseFile = function(fileContent, log)
                                         }
                                         LUISJsonStruct.utterances.push(utteranceObject);
                                     } else {
-                                        if(!log) console.log('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance);
+                                        if(!log) process.stdout.write(chalk.yellow('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance + '\n'));
                                     }
                                 } else {
-                                    if(!log)  console.log('WARN: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value');
+                                    if(!log)  process.stdout.write(chalk.yellow('WARN: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value \n'));
                                 }
                             });
                         } else {
@@ -644,8 +646,9 @@ var parseFile = function(fileContent, log)
             } else {
                 //error. No Parser decoration found
                 if(!log) {
-                    console.error('ERROR: No parser decoration found. Sections need to start with # or $ or ? or #ref or #url');
-                    console.error(chunk.toString());
+                    process.stdout.write(chalk.red('ERROR: No parser decoration found. Sections need to start with # or $ or ? or #ref or #url\n'));
+                    process.stdout.write(chalk.red(chunk.toString() + '\n'));
+                    process.exit(1);
                 }
             } 
         }
