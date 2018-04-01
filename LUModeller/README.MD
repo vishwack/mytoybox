@@ -7,14 +7,38 @@ Imagine a world where you can quickly author language understanding components f
 
 The LUModeller tool converts .lu files to a LUIS model json file.
 
-## LU File
+## Installation
+```bash
+npm i -g lumodeller
+```
+## Arguments
+
+| Argument											| Description 														|
+|---------------------------------------------------|-------------------------------------------------------------------|
+|-s, --luis_schema_version <luis_schema_version>  	| LUIS Schema version |
+|-d, --luis_versionId <versionId>	                | LUIS app version ID |
+|-n, --luis_name <lName>                         	| LUIS app name |
+|-d, --luis_desc <desc>                           	| LUIS app description |
+|-c, --luis_culture <culture>                       | LUIS app culture |
+|-m, --qna_name <qName>                             | QnA KB name |
+|-q, --quiet                                        | Quiet, no trace messages |
+|-h, --help                                         | output usage information |
+
+## Output
+LUModeller tool will output:
+- LUIS json file if any LUIS concept definitions are found in the .lu file(s)
+- QnA json file if any QnAMaker.ai concept definitions are found in the .lu file(s)
+
+## .lu File Format
+.lu files contain markdown-like, simple text based definitions for [LUIS](http://luis.ai) or [QnAmaker.ai](http://qnamaker.ai) concepts. 
+
 ### Intent
 An intent represents actions the user wants to perform. The intent is a purpose or goal expressed in a user's input, such as booking a flight, paying a bill, or finding a news article. You define and name intents that correspond to these actions. A travel app may define an intent named "BookFlight."
 
 Here's a simple .lu file that captures a simple 'Greeting' intent with example utterances that capture ways users can express this intent:
 
 ```
-#Greeting
+# Greeting
 Hi
 Hello
 Good morning
@@ -26,19 +50,18 @@ Good evening
 You can stitch together multiple intent definitions in a single file like this:
 
 ```
-#Greeting
+# Greeting
 Hi
 Hello
 Good morning
 Good evening
 
-#Help
+# Help
 help
 I need help
 please help
 ```
-
-A blank line is used to delimit different sections and is also useful for improved readability.
+Each section is idenfied by #\<intent name\> notation. Blank lines are skipped when parsing the file.
 
 ### Entity
 An entity represents detailed information that is relevant in the utterance. For example, in the utterance "Book a ticket to Paris", "Paris" is a location. 
@@ -49,19 +72,10 @@ An entity represents detailed information that is relevant in the utterance. For
 |"When does your store **open**?"|open|
 |"Schedule a meeting at **1pm** with **Bob** in Distribution"|1pm, Bob|
 
-Entity in .lu file is denoted using {\<entityName\>} notation. Here's an example: 
+Entity in .lu file is denoted using {\<entityName\>:\<labelled value\>} notation. Here's an example: 
 
 ```
-#createAlarm
-create an alarm for {alarmTime}
-set an alarm for {alarmTime}
-```
-\{alarmTime\} is the entity that can take "tomorrow, 7AM", "8PM", "7AM, every weekday" etc.
-
-You can also create an entity with a labelled value. Here's an example of how to do that.
-
-```
-#CreateAlarm
+# CreateAlarm
 create an alarm for {alarmTime:7AM}
 set an alarm for {alarmTime:7AM}
 ```
@@ -71,7 +85,7 @@ LUModeller tool supports the following [LUIS entity types](https://docs.microsof
 - List
 - Simple
 
-LUModeller tool *does not* support the following LUIS entity types:
+LUModeller tool <b>*does not*</b> support the following LUIS entity types:
 - Regular expression
 - Hierarchical
 - Composite
@@ -79,7 +93,7 @@ LUModeller tool *does not* support the following LUIS entity types:
 You can define an entity type by using the $\<entityName\>:\<entityType\> notation. Here's an example: 
 
 ```
-#CreateAlarm
+# CreateAlarm
 create an alarm for {alarmTime:7AM}
 set an alarm for {alarmTime:7AM}
 
@@ -118,15 +132,17 @@ Here's an example of a phrase list definition:
 $ChocolateType:phraseList
 m&m,mars,mints,spearmings,payday,jelly,kit kat,kitkat,twix
 ```
+Note that the parser defaults to simple entity type.
 
 ### Patterns
 Patterns are a new feature in LUIS that allows you to define a set of rules that augment the machine learned model. You can define patterns in the .lu file by prefixing the utterance with '~'. Here's an example: 
 
 ```
-#DeleteAlarm
+# DeleteAlarm
 ~delete alarm
 ~(delete|remove) the {alarmTime} alarm
 ```
+One of the benefits of patterns is that you do not have to provide a labelled value to an entity.
 
 Note: By default any entity that is left undescribed in a pattern will be mapped to Pattern.Any entity type.
 
@@ -134,14 +150,14 @@ Note: By default any entity that is left undescribed in a pattern will be mapped
 Entities can have roles. You can define roles for entities using the $\<entityRole\>:\<entityType\> notation. Here's an example where both addTime and remTime are roles of the datetimeV2 entity: 
 
 ```
-#CreateAlarm
+# CreateAlarm
 ~create an alarm
 ~create an alarm for {addTime}
 ~set an alarm for {addTime}
 
 $addTime:datetimeV2
 
-#DeleteAlarm
+# DeleteAlarm
 ~delete alarm
 ~(delete|remove) the {remTime} alarm
 
@@ -156,14 +172,18 @@ $remTime:datetimeV2
 Here's an example of question and answer definitions. The LUModeller tool will automatically separate question and answers into a qnamaker JSON file that you can then use to create your new [QnaMaker.ai](http://qnamaker.ai) knowledge base article.
 
 ```
-?How can I change the default message from QnA Maker?
+? How can I change the default message from QnA Maker?
 You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
 
-?How do I programmatically update my KB?
+? How do I programmatically update my KB?
 You can use our REST apis to manage your KB. See here for details: https://westus.dev.cognitive.microsoft.com/docs/services/58994a073d9e04097c7ba6fe/operations/58994a073d9e041ad42d9baa
+```
 
-?Who is your name?
-?What should I call you?
+You can add multiple questions to the same answer by simply additing variations to questions. Here's an example
+
+```
+? Who is your name?
+? What should I call you?
 I'm the echoBot! Nice to meet you.
 ```
 
@@ -175,7 +195,7 @@ Two different references are supported in the .lu file:
 Here's an example of those references: 
 
 ```
-?How can I change the default message from QnA Maker?
+? How can I change the default message from QnA Maker?
 You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
 
 #url('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
@@ -195,12 +215,3 @@ hello
 ```
 
 You can also add comments in a line. All text after // will be ignored and treated as a comment.
-
-
-
-
-
-
-
-
-

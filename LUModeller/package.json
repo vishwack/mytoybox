@@ -13,7 +13,7 @@
   "author": "Vishwac Sena Kannan",
   "license": "MIT",
   "bin": {
-    "snippet": "./index.js"
+    "lumodeller": "./bin/lumodeller.js"
   },
   "bugs": {
     "url": "https://github.com/vishwacsena/mytoybox/issues"

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const program = require('commander');
-const fParser = require('./parser');
+const fParser = require('../parser');
 program
     .arguments('<file>')
     .option('-s, --luis_schema_version <luis_schema_version>', 'LUIS Schema version')
