@@ -1,20 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
-const LUISObjNameEnum = {
-    INTENT: "intents",
-    ENTITIES: "entities",
-    PATTERNANYENTITY: "patternAnyEntities",
-    CLOSEDLISTS: "closedLists"
-};
-const PARSERCONSTS = {
-    FILEREF: "#ref",
-    INTENT: "#",
-    ENTITY: "$",
-    QNA: "?",
-    URLREF: "#url",
-    COMMENT: "//"
-};
+const LUISObjNameEnum = require('./lib/enums/luisobjenum');
+const PARSERCONSTS = require('./lib/enums/parserconsts');
+const builtInTypes = require('./lib/enums/luisbuiltintypes');
 module.exports = {
     /**
      * handle parsing the root file that was passed in command line args
@@ -132,20 +121,6 @@ module.exports = {
 var parseFile = function(fileContent, log) 
 {
     var additionalFilesToParse = new Array();
-    var builtInTypes = 
-        [
-            "datetimeV2",
-            "age",
-            "dimension",
-            "email",
-            "money",
-            "number",
-            "ordinal",
-            "percentage",
-            "phoneNumber",
-            "temperature",
-            "url"
-        ];
     var otherTypes = ['list'];
     var LUISJsonStruct = {
         "intents": new Array(),
@@ -163,7 +138,7 @@ var parseFile = function(fileContent, log)
     var qnaJsonStruct = {
         "qnaPairs": new Array(),
         "urls": new Array()
-    }
+    };
     var splitOnBlankLines = splitFileBySections(fileContent.toString());
 
     // loop through every chunk of information
