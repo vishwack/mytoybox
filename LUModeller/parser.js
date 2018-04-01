@@ -682,9 +682,9 @@ var splitFileBySections = function(fileContent) {
             if(currentSection !== null) {
                 var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
                 sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-            }
+            } 
             // only list entity types can have multi-line definition
-            if(currentLine.includes(':list')){
+            if(currentLine.toLowerCase().includes(':list') || currentLine.toLowerCase().includes(':phraselist')){
                 middleOfSection = true;
                 currentSectionType = PARSERCONSTS.ENTITY;
                 currentSection = currentLine + "\r\n";

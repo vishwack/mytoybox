@@ -65,4 +65,4 @@ fax:
 	fascimile
 
 // You can have references to external .lu files
-#ref('./Tests/none.lu')
+#ref('./Examples/none.lu')

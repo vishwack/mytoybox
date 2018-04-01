@@ -66,9 +66,9 @@ fax:
 
 // You can have references to external .lu files
 
-#ref('./Tests/none.lu')
+#ref('./Examples/none.lu')
 
-#ref('./Tests/buyChocolate.lu')
+#ref('./Examples/buyChocolate.lu')
 
 // ----- Definition of QnA pairs -------
 ? How can I change the default message from QnA Maker?
@@ -83,3 +83,4 @@ Vishwac Sena Kannan
 
 // FAQ URLs for QnA maker to ingest.
 #url('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
+
