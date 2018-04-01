@@ -1,3 +1,4 @@
+// reference to phrase lists for this bot
 #ref('./Tests/phraseLists.lu')
 
 #Buy chocolate

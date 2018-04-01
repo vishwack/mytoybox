@@ -1,0 +1,24 @@
+{
+  "qnaPairs": [
+    {
+      "answer": "Vishwac Sena Kannan",
+      "question": "How can I change the default message from QnA Maker?"
+    },
+    {
+      "answer": "Vishwac Sena Kannan",
+      "question": "How do I programmatically update my KB?"
+    },
+    {
+      "answer": "Vishwac Sena Kannan",
+      "question": "Who is your ceo?"
+    },
+    {
+      "answer": "Vishwac Sena Kannan",
+      "question": "get me your ceo info"
+    }
+  ],
+  "urls": [
+    "https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs"
+  ],
+  "name": "qna4"
+}

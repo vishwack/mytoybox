@@ -1,6 +1,6 @@
 #changeAlarm
-change an alarm
-change {remTime} to {newTime}
+~change an alarm
+~change {remTime} to {newTime}
 
 $newTime:datetimeV2
 
