@@ -8,6 +8,7 @@ program
     .option('-n, --luis_name <lName>', 'LUIS app name')
     .option('-d, --luis_desc <desc>', 'LUIS app description')
     .option('-c, --luis_culture <culture>', 'LUIS app culture')
+    .option('-t, --write_luis_batch_tests', 'Set this to write out a json file that you can import as a batch tests in luis.ai')
     .option('-m, --qna_name <qName>', 'QnA KB name')
     .option('-q, --quiet', 'Quiet, no trace messages')
     .action(function(rootFile) {

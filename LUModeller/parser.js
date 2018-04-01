@@ -24,6 +24,7 @@ module.exports = {
                     process.exit(1);
                 }
             });
+            
             var fileContent = fs.readFileSync(file);
             if (!fileContent) {
                 process.stdout.write(chalk.red('Sorry, error reading file:' + file + '\n'));    
@@ -107,6 +108,31 @@ module.exports = {
                 } 
             });
             if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + program.qOutFile + '\n'));
+
+            // write tsv file for QnA maker
+            var QnAFileContent;
+            finalQnAJSON.qnaPairs.forEach(function(QnAPair) {
+                QnAFileContent += QnAPair.question + '\t' + QnAPair.answer + '\t Editorial \r\n';
+            });
+            var QnATsvFileName = path.basename(rootFile, path.extname(rootFile)) + "_qnaTSV.tsv";
+            fs.writeFileSync(QnATsvFileName, QnAFileContent, function(error) {
+                if(error) {
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + QnATsvFileName + '\n'));
+                } 
+            });
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + QnATsvFileName + '\n'));
+        }
+
+        // write luis batch test file if requested
+        if(program.write_luis_batch_tests) {
+            var LUISBatchFileName = path.basename(rootFile, path.extname(rootFile)) + "_LUISBatchTest.json";
+            // write out the final LUIS Json
+            fs.writeFileSync(LUISBatchFileName, JSON.stringify(finalLUISJSON.utterances, null, 2), function(error) {
+                if(error) {
+                    process.stdout.write(chalk.red('Unable to write LUIS batch test JSON file - ' + LUISBatchFileName + '\n'));
+                } 
+            });
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS batch test JSON file to ' + LUISBatchFileName + '\n'));
         }
     }
 };
