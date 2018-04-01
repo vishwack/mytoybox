@@ -275,7 +275,7 @@ var splitFileBySections = function(fileContent) {
         // is this a FILEREF or URLREF section? 
         if((currentLine.indexOf(PARSERCONSTS.FILEREF) === 0) ||
            (currentLine.indexOf(PARSERCONSTS.URLREF) === 0)) {
-            // TODO: handle anything in currentSection buffer
+            // handle anything in currentSection buffer
             if(currentSection !== null) {
                 var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
                 sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
@@ -284,7 +284,7 @@ var splitFileBySections = function(fileContent) {
             sectionsInFile.push(currentLine);
             middleOfSection = false;
         } else if((currentLine.indexOf(PARSERCONSTS.INTENT) === 0)) {
-            // TODO: handle anything in currentSection buffer
+            // handle anything in currentSection buffer
             if(currentSection !== null) {
                 var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
                 sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
@@ -293,7 +293,7 @@ var splitFileBySections = function(fileContent) {
             currentSectionType = PARSERCONSTS.INTENT;
             currentSection = currentLine + "\r\n";
         } else if((currentLine.indexOf(PARSERCONSTS.ENTITY) === 0)) {
-            // TODO: handle anything in currentSection buffer
+            // handle anything in currentSection buffer
             if(currentSection !== null) {
                 var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
                 sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
@@ -320,41 +320,22 @@ var splitFileBySections = function(fileContent) {
         } else {
             if(middleOfSection) {
                 currentSection += currentLine + "\r\n";
+                // did we just have an answer for QnA? 
+                if(currentSectionType === PARSERCONSTS.QNA) {
+                    var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+                    sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+                    currentSection = null;
+                    middleOfSection = false;
+                    currentSectionType = null;
+                }
             } else {
                 console.log('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA');
                 console.log('Stopping further processing.');
                 process.exit(1);
             }
         }
-/*
-        // see if current line has a parser identifier
-        if((currentLine.indexOf(PARSERCONSTS.INTENT) === 0)  ||
-           (currentLine.indexOf(PARSERCONSTS.ENTITY) === 0)  ||
-           (currentLine.indexOf(PARSERCONSTS.QNA) === 0)     ||
-           (currentLine.indexOf(PARSERCONSTS.FILEREF) === 0) || 
-           (currentLine.indexOf(PARSERCONSTS.URLREF) === 0)) {
-                // this is a new section. Push currentSection to sectionsInFile.
-                if(currentSection !== null) {
-                    // drop the last /r/n and push
-                    sectionsInFile.push(currentSection.substring(0, currentSection.lastIndexOf("\r\n")));
-                }
-                currentSection = currentLine + "\r\n";
-                middleOfSection = true;
-           } else {
-               if(middleOfSection) {
-                   currentSection += currentLine + "\r\n";
-               } else {
-                   console.log('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA');
-                   console.log('Stopping further processing.');
-                   process.exit(1);
-               }
-           }
     }
-    // drop the last /r/n and push
-    sectionsInFile.push(currentSection.substring(0, currentSection.lastIndexOf("\r\n")));
-*/
-    }
-    // TODO: handle anything in currentSection buffer
+    // handle anything in currentSection buffer
     if(currentSection !== null) {
         var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
         sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
