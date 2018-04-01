@@ -1,7 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
-
+const LUISObjNameEnum = {
+    INTENT: "intents",
+    ENTITIES: "entities",
+    PATTERNANYENTITY: "patternAnyEntities",
+    CLOSEDLISTS: "closedLists"
+};
+const PARSERCONSTS = {
+    FILEREF: "#ref",
+    INTENT: "#",
+    ENTITY: "$",
+    QNA: "?",
+    URLREF: "#url",
+    COMMENT: "//"
+};
 module.exports = {
     /**
      * handle parsing the root file that was passed in command line args
@@ -108,244 +121,14 @@ module.exports = {
         }
     }
 };
-
-var collateQnAFiles = function(parsedBlobs) {
-    var FinalQnAJSON = parsedBlobs[0];
-    parsedBlobs.splice(0,1);
-    parsedBlobs.forEach(function(blob) {
-        // does this blob have URLs?
-        if(blob.urls.length > 0) {
-            // add this url if this does not already exist in finaljson
-            blob.urls.forEach(function(qnaUrl) {
-                if(!FinalQnAJSON.urls.includes(qnaUrl)) {
-                    FinalQnAJSON.urls.push(qnaUrl);
-                }
-            });
-        }
-
-        // does this blob have qnapairs?
-        if(blob.qnaPairs.length > 0) {
-            // walk through each qnaPair and add it if the question does not exist
-            blob.qnaPairs.forEach(function(qnaPair) {
-                var qnaExists = false;
-                var fIndex = 0;
-                for(fIndex in FinalQnAJSON.qnaPairs) {
-                    if(qnaPair.question === FinalQnAJSON.qnaPairs[fIndex].question) {
-                        qnaExists = true;
-                        break;
-                    }
-                }
-                if(!qnaExists) {
-                    FinalQnAJSON.qnaPairs.push(qnaPair);
-                }
-            });
-        }
-    });
-    return FinalQnAJSON;
-}
-var collateLUISFiles = function(parsedBlobs) {
-    var FinalLUISJSON = parsedBlobs[0];
-    parsedBlobs.splice(0,1);
-    parsedBlobs.forEach(function(blob) {
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.INTENT);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.ENTITIES);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.PATTERNANYENTITY);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.CLOSEDLISTS);
-        // do we have patterns here?
-        if(blob.patterns.length > 0) {
-            blob.patterns.forEach(function(pattern) {
-                FinalLUISJSON.patterns.push(pattern);
-            });
-        }
-        // do we have utterances here?
-        if(blob.utterances.length > 0) {
-            blob.utterances.forEach(function(utteranceItem) {
-                FinalLUISJSON.utterances.push(utteranceItem);
-            });
-        }
-        // do we have bing_entities here? 
-        if(blob.bing_entities.length > 0) {
-            blob.bing_entities.forEach(function(bingEntity) {
-                if(!FinalLUISJSON.bing_entities.includes(bingEntity)) FinalLUISJSON.bing_entities.push(bingEntity);
-            });
-        }
-        // do we have prebuiltEntities here?
-        if(blob.prebuiltEntities.length > 0) {
-            blob.prebuiltEntities.forEach(function(prebuiltEntity){
-                var prebuiltTypeExists = false;
-                for(fIndex in FinalLUISJSON.prebuiltEntities) {
-                    if(prebuiltEntity.type === FinalLUISJSON.prebuiltEntities[fIndex].type) {
-                        // do we have all the roles? if not, merge the roles
-                        prebuiltEntity.roles.forEach(function(role) {
-                            if(!FinalLUISJSON.prebuiltEntities[fIndex].roles.includes(role)) {
-                                FinalLUISJSON.prebuiltEntities[fIndex].roles.push(role);
-                            }
-                        });
-                        prebuiltTypeExists = true;
-                        break;
-                    }
-                }
-                if(!prebuiltTypeExists) {
-                    FinalLUISJSON.prebuiltEntities.push(prebuiltEntity);
-                }
-            });
-        }
-        // do we have model_features?
-        if(blob.model_features.length > 0) {
-            blob.model_features.forEach(function(modelFeature) {
-                var modelFeatureExists = false;
-                for(fIndex in FinalLUISJSON.model_features) {
-                    if(modelFeature.name === FinalLUISJSON.model_features[fIndex].name) {
-                        // add values to the existing model feature
-                        FinalLUISJSON.model_features[fIndex].words += "," + modelFeature.words;
-                        modelFeatureExists = true;
-                        break;
-                    }
-                }
-                if(!modelFeatureExists) {
-                    FinalLUISJSON.model_features.push(modelFeature);
-                }
-            });
-        }
-    }); 
-    return FinalLUISJSON;
-}
-var mergeResults = function(blob, finalCollection, type) {
-    if(blob[type].length > 0) {
-        blob[type].forEach(function(blobItem){
-            // add if this intent does not already exist in finalJSON
-            var itemExists = false;
-            for(fIndex in finalCollection[type]) {
-                if(blobItem.name === finalCollection[type][fIndex].name){
-                    itemExists = true;
-                    break;
-                }
-            }
-            if(!itemExists) {
-                finalCollection[type].push(blobItem);
-            }
-        });
-    }
-}
-var validateAndPushCurrentBuffer = function(previousSection, sectionsInFile, currentSectionType, lineIndex) {
-    switch(currentSectionType) {
-        case PARSERCONSTS.INTENT:
-            // warn if there isnt at least one utterance in an intent
-            if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0] + '\n'));
-            }
-            sectionsInFile.push(previousSection);
-            break;
-        case PARSERCONSTS.QNA:
-            // warn if there isnt at least one utterance in an intent
-            if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0] + '\n'));
-            }
-            sectionsInFile.push(previousSection);
-            break;
-        case PARSERCONSTS.ENTITY:
-            // warn if there isnt at least one utterance in an intent
-            if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0] + '\n'));
-            }
-            sectionsInFile.push(previousSection);
-            break;
-        default:
-            sectionsInFile.push(previousSection);
-    }
-    return sectionsInFile;
-}
-var splitFileBySections = function(fileContent) {
-    var linesInFile = fileContent.split(/\n|\r\n/);
-    var currentSection = null;
-    var middleOfSection = false;
-    var sectionsInFile = [];
-    var currentSectionType = null; //PARSERCONSTS
-    for(lineIndex in linesInFile) {
-        var currentLine = linesInFile[lineIndex].trim();
-        // skip line if it is just a comment
-        if(currentLine.indexOf(PARSERCONSTS.COMMENT) === 0) continue;
-        // skip line if it is blank
-        if(currentLine === "") continue;
-        // drop any contents in this line after a comment block
-        // e.g. #Greeting //this is the root intent should return #Greeting
-        // #Greeting \// this should be considered should return everything
-        var currentLineWithoutComments = currentLine.split(/\/\/\s*/); 
-        if(currentLineWithoutComments.length > 0) {
-            // exclude http[s]://
-            if(!currentLineWithoutComments[0].includes('http')) currentLine = currentLineWithoutComments[0].trim();
-        }
-
-        // is this a FILEREF or URLREF section? 
-        if((currentLine.indexOf(PARSERCONSTS.FILEREF) === 0) ||
-           (currentLine.indexOf(PARSERCONSTS.URLREF) === 0)) {
-            // handle anything in currentSection buffer
-            if(currentSection !== null) {
-                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
-                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-            }
-            currentSection = null;
-            sectionsInFile.push(currentLine);
-            middleOfSection = false;
-        } else if((currentLine.indexOf(PARSERCONSTS.INTENT) === 0)) {
-            // handle anything in currentSection buffer
-            if(currentSection !== null) {
-                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
-                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-            }
-            middleOfSection = true;
-            currentSectionType = PARSERCONSTS.INTENT;
-            currentSection = currentLine + "\r\n";
-        } else if((currentLine.indexOf(PARSERCONSTS.ENTITY) === 0)) {
-            // handle anything in currentSection buffer
-            if(currentSection !== null) {
-                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
-                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-            }
-            // only list entity types can have multi-line definition
-            if(currentLine.includes(':list')){
-                middleOfSection = true;
-                currentSectionType = PARSERCONSTS.ENTITY;
-                currentSection = currentLine + "\r\n";
-            } else {
-                sectionsInFile.push(currentLine);
-                middleOfSection = false;
-                currentSection = null;
-            }
-        } else if((currentLine.indexOf(PARSERCONSTS.QNA) === 0)) {
-            // there can be multiple questions to answer here. So keep adding.
-            middleOfSection = true;
-            currentSectionType = PARSERCONSTS.QNA;
-            if(currentSection !== null) {
-                currentSection += currentLine + "\r\n";
-            } else {
-                currentSection = currentLine + "\r\n";
-            }            
-        } else {
-            if(middleOfSection) {
-                currentSection += currentLine + "\r\n";
-                // did we just have an answer for QnA? 
-                if(currentSectionType === PARSERCONSTS.QNA) {
-                    var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
-                    sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-                    currentSection = null;
-                    middleOfSection = false;
-                    currentSectionType = null;
-                }
-            } else {
-                process.stdout.write(chalk.red('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA \n'));
-                process.stdout.write(chalk.red('Stopping further processing.\n'));
-                process.exit(1);
-            }
-        }
-    }
-    // handle anything in currentSection buffer
-    if(currentSection !== null) {
-        var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
-        sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
-    }
-    return sectionsInFile;
-}
+/**
+ * Main parser code to parse current file contents into LUIS and QNA sections.
+ *
+ * @param {string} fileContent current file content
+ * @param {boolean} log indicates if we need verbose logging.
+ *  
+ * @returns {additionalFilesToParse,LUISJsonStruct,qnaJsonStruct} Object that contains list of additional files to parse, parsed LUIS object and parsed QnA object
+ */
 var parseFile = function(fileContent, log) 
 {
     var additionalFilesToParse = new Array();
@@ -661,23 +444,16 @@ var parseFile = function(fileContent, log)
     };
     
 }
-const LUISObjNameEnum = {
-    INTENT: "intents",
-    ENTITIES: "entities",
-    PATTERNANYENTITY: "patternAnyEntities",
-    CLOSEDLISTS: "closedLists"
-};
-
-const PARSERCONSTS = {
-    FILEREF: "#ref",
-    INTENT: "#",
-    ENTITY: "$",
-    QNA: "?",
-    URLREF: "#url",
-    COMMENT: "//"
-};
 
 
+/**
+ * Helper function to add an item to collection if it does not exist
+ *
+ * @param {object} collection contents of the current collection
+ * @param {LUISObjNameEnum} type item type
+ * @param {object} value value of the current item to examine and add
+ *  
+ */
 var addItemIfNotPresent = function(collection, type, value) {
     var hasValue = false;
     for(var i in collection[type]) {
@@ -694,4 +470,285 @@ var addItemIfNotPresent = function(collection, type, value) {
         }
         collection[type].push(itemObj);
     }  
+};
+
+/**
+ * Handle collating all QnA sections across all parsed files into one QnA collection
+ *
+ * @param {object} parsedBlobs Contents of all parsed file blobs
+ * 
+ * @returns {FinalQnAJSON} Final qna json contents
+ */
+var collateQnAFiles = function(parsedBlobs) {
+    var FinalQnAJSON = parsedBlobs[0];
+    parsedBlobs.splice(0,1);
+    parsedBlobs.forEach(function(blob) {
+        // does this blob have URLs?
+        if(blob.urls.length > 0) {
+            // add this url if this does not already exist in finaljson
+            blob.urls.forEach(function(qnaUrl) {
+                if(!FinalQnAJSON.urls.includes(qnaUrl)) {
+                    FinalQnAJSON.urls.push(qnaUrl);
+                }
+            });
+        }
+
+        // does this blob have qnapairs?
+        if(blob.qnaPairs.length > 0) {
+            // walk through each qnaPair and add it if the question does not exist
+            blob.qnaPairs.forEach(function(qnaPair) {
+                var qnaExists = false;
+                var fIndex = 0;
+                for(fIndex in FinalQnAJSON.qnaPairs) {
+                    if(qnaPair.question === FinalQnAJSON.qnaPairs[fIndex].question) {
+                        qnaExists = true;
+                        break;
+                    }
+                }
+                if(!qnaExists) {
+                    FinalQnAJSON.qnaPairs.push(qnaPair);
+                }
+            });
+        }
+    });
+    return FinalQnAJSON;
+};
+
+/**
+ * Handle collating all LUIS sections across all parsed files into one LUIS collection
+ *
+ * @param {object} parsedBlobs Contents of all parsed file blobs
+ * 
+ * @returns {FinalLUISJSON} Final qna json contents
+ */
+var collateLUISFiles = function(parsedBlobs) {
+    var FinalLUISJSON = parsedBlobs[0];
+    parsedBlobs.splice(0,1);
+    parsedBlobs.forEach(function(blob) {
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.INTENT);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.ENTITIES);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.PATTERNANYENTITY);
+        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.CLOSEDLISTS);
+        // do we have patterns here?
+        if(blob.patterns.length > 0) {
+            blob.patterns.forEach(function(pattern) {
+                FinalLUISJSON.patterns.push(pattern);
+            });
+        }
+        // do we have utterances here?
+        if(blob.utterances.length > 0) {
+            blob.utterances.forEach(function(utteranceItem) {
+                FinalLUISJSON.utterances.push(utteranceItem);
+            });
+        }
+        // do we have bing_entities here? 
+        if(blob.bing_entities.length > 0) {
+            blob.bing_entities.forEach(function(bingEntity) {
+                if(!FinalLUISJSON.bing_entities.includes(bingEntity)) FinalLUISJSON.bing_entities.push(bingEntity);
+            });
+        }
+        // do we have prebuiltEntities here?
+        if(blob.prebuiltEntities.length > 0) {
+            blob.prebuiltEntities.forEach(function(prebuiltEntity){
+                var prebuiltTypeExists = false;
+                for(fIndex in FinalLUISJSON.prebuiltEntities) {
+                    if(prebuiltEntity.type === FinalLUISJSON.prebuiltEntities[fIndex].type) {
+                        // do we have all the roles? if not, merge the roles
+                        prebuiltEntity.roles.forEach(function(role) {
+                            if(!FinalLUISJSON.prebuiltEntities[fIndex].roles.includes(role)) {
+                                FinalLUISJSON.prebuiltEntities[fIndex].roles.push(role);
+                            }
+                        });
+                        prebuiltTypeExists = true;
+                        break;
+                    }
+                }
+                if(!prebuiltTypeExists) {
+                    FinalLUISJSON.prebuiltEntities.push(prebuiltEntity);
+                }
+            });
+        }
+        // do we have model_features?
+        if(blob.model_features.length > 0) {
+            blob.model_features.forEach(function(modelFeature) {
+                var modelFeatureExists = false;
+                for(fIndex in FinalLUISJSON.model_features) {
+                    if(modelFeature.name === FinalLUISJSON.model_features[fIndex].name) {
+                        // add values to the existing model feature
+                        FinalLUISJSON.model_features[fIndex].words += "," + modelFeature.words;
+                        modelFeatureExists = true;
+                        break;
+                    }
+                }
+                if(!modelFeatureExists) {
+                    FinalLUISJSON.model_features.push(modelFeature);
+                }
+            });
+        }
+    }); 
+    return FinalLUISJSON;
+};
+
+/**
+ * Helper function to merge item if it does not already exist
+ *
+ * @param {object} blob Contents of all parsed file blobs
+ * @param {object} finalCollection reference to the final collection of items
+ * @param {LUISObjNameEnum} type enum type of possible LUIS object types
+ * 
+ */
+var mergeResults = function(blob, finalCollection, type) {
+    if(blob[type].length > 0) {
+        blob[type].forEach(function(blobItem){
+            // add if this item if it does not already exist in final collection
+            var itemExists = false;
+            for(fIndex in finalCollection[type]) {
+                if(blobItem.name === finalCollection[type][fIndex].name){
+                    itemExists = true;
+                    break;
+                }
+            }
+            if(!itemExists) {
+                finalCollection[type].push(blobItem);
+            }
+        });
+    }
+};
+
+/**
+ * Helper function to examine type of content in the current buffer and provide validation errors based on content type
+ *
+ * @param {string} previousSection Contents of of the prior section being parsed
+ * @param {string[]} sectionsInFile array of strings of prior sections parsed in current file
+ * @param {PARSERCONSTS} currentSectionType type of current section parsed
+ * @param {int} lineIndex current line index being parsed
+ * 
+ * @returns {string[]} updated sections in current file being parsed.
+ */
+var validateAndPushCurrentBuffer = function(previousSection, sectionsInFile, currentSectionType, lineIndex) {
+    switch(currentSectionType) {
+        case PARSERCONSTS.INTENT:
+            // warn if there isnt at least one utterance in an intent
+            if(previousSection.split(/\r\n/).length === 1)  {
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0] + '\n'));
+            }
+            sectionsInFile.push(previousSection);
+            break;
+        case PARSERCONSTS.QNA:
+            // warn if there isnt at least one utterance in an intent
+            if(previousSection.split(/\r\n/).length === 1)  {
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0] + '\n'));
+            }
+            sectionsInFile.push(previousSection);
+            break;
+        case PARSERCONSTS.ENTITY:
+            // warn if there isnt at least one utterance in an intent
+            if(previousSection.split(/\r\n/).length === 1)  {
+                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0] + '\n'));
+            }
+            sectionsInFile.push(previousSection);
+            break;
+        default:
+            sectionsInFile.push(previousSection);
+    }
+    return sectionsInFile;
+};
+
+/**
+ * Helper function to split current file content by sections. Each section needs a parser delimiter
+ *
+ * @param {string} fileContent string content of current file being parsed
+ * 
+ * @returns {string[]} List of parsed LUIS/ QnA sections in current file
+ */
+var splitFileBySections = function(fileContent) {
+    var linesInFile = fileContent.split(/\n|\r\n/);
+    var currentSection = null;
+    var middleOfSection = false;
+    var sectionsInFile = [];
+    var currentSectionType = null; //PARSERCONSTS
+    for(lineIndex in linesInFile) {
+        var currentLine = linesInFile[lineIndex].trim();
+        // skip line if it is just a comment
+        if(currentLine.indexOf(PARSERCONSTS.COMMENT) === 0) continue;
+        // skip line if it is blank
+        if(currentLine === "") continue;
+        // drop any contents in this line after a comment block
+        // e.g. #Greeting //this is the root intent should return #Greeting
+        // #Greeting \// this should be considered should return everything
+        var currentLineWithoutComments = currentLine.split(/\/\/\s*/); 
+        if(currentLineWithoutComments.length > 0) {
+            // exclude http[s]://
+            if(!currentLineWithoutComments[0].includes('http')) currentLine = currentLineWithoutComments[0].trim();
+        }
+
+        // is this a FILEREF or URLREF section? 
+        if((currentLine.indexOf(PARSERCONSTS.FILEREF) === 0) ||
+           (currentLine.indexOf(PARSERCONSTS.URLREF) === 0)) {
+            // handle anything in currentSection buffer
+            if(currentSection !== null) {
+                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+            }
+            currentSection = null;
+            sectionsInFile.push(currentLine);
+            middleOfSection = false;
+        } else if((currentLine.indexOf(PARSERCONSTS.INTENT) === 0)) {
+            // handle anything in currentSection buffer
+            if(currentSection !== null) {
+                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+            }
+            middleOfSection = true;
+            currentSectionType = PARSERCONSTS.INTENT;
+            currentSection = currentLine + "\r\n";
+        } else if((currentLine.indexOf(PARSERCONSTS.ENTITY) === 0)) {
+            // handle anything in currentSection buffer
+            if(currentSection !== null) {
+                var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+                sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+            }
+            // only list entity types can have multi-line definition
+            if(currentLine.includes(':list')){
+                middleOfSection = true;
+                currentSectionType = PARSERCONSTS.ENTITY;
+                currentSection = currentLine + "\r\n";
+            } else {
+                sectionsInFile.push(currentLine);
+                middleOfSection = false;
+                currentSection = null;
+            }
+        } else if((currentLine.indexOf(PARSERCONSTS.QNA) === 0)) {
+            // there can be multiple questions to answer here. So keep adding.
+            middleOfSection = true;
+            currentSectionType = PARSERCONSTS.QNA;
+            if(currentSection !== null) {
+                currentSection += currentLine + "\r\n";
+            } else {
+                currentSection = currentLine + "\r\n";
+            }            
+        } else {
+            if(middleOfSection) {
+                currentSection += currentLine + "\r\n";
+                // did we just have an answer for QnA? 
+                if(currentSectionType === PARSERCONSTS.QNA) {
+                    var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+                    sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+                    currentSection = null;
+                    middleOfSection = false;
+                    currentSectionType = null;
+                }
+            } else {
+                process.stdout.write(chalk.red('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA \n'));
+                process.stdout.write(chalk.red('Stopping further processing.\n'));
+                process.exit(1);
+            }
+        }
+    }
+    // handle anything in currentSection buffer
+    if(currentSection !== null) {
+        var previousSection = currentSection.substring(0, currentSection.lastIndexOf("\r\n"));
+        sectionsInFile = validateAndPushCurrentBuffer(previousSection, sectionsInFile, currentSectionType, lineIndex);
+    }
+    return sectionsInFile;
 };
