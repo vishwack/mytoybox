@@ -1,0 +1,6 @@
+#ref('../testcases/comment.lu')
+
+#ref('../testcases/1-intent.lu')
+
+#ref('../testcases/1-intent-pattern-prebuilt.lu')
+

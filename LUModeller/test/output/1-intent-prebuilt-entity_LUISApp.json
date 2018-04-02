@@ -1,0 +1,40 @@
+{
+  "intents": [
+    {
+      "name": "CreateAlarm"
+    }
+  ],
+  "entities": [],
+  "composites": [],
+  "closedLists": [],
+  "bing_entities": [
+    "datetimeV2"
+  ],
+  "model_features": [],
+  "regex_features": [],
+  "utterances": [
+    {
+      "text": "create an alarm",
+      "intent": "CreateAlarm",
+      "entities": []
+    },
+    {
+      "text": "create an alarm for 7AM",
+      "intent": "CreateAlarm",
+      "entities": []
+    },
+    {
+      "text": "set an alarm for 7AM next thursday",
+      "intent": "CreateAlarm",
+      "entities": []
+    }
+  ],
+  "patterns": [],
+  "patternAnyEntities": [],
+  "prebuiltEntities": [],
+  "luis_schema_version": "2.1.0",
+  "versionId": "0.1",
+  "name": "1-intent-prebuilt-entity",
+  "desc": "",
+  "culture": "en-us"
+}

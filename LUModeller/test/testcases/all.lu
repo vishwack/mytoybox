@@ -34,7 +34,7 @@ set an alarm for 7AM next thursday
 // alarmTime is a role for prebuilt datetimev2 entity
 $alarmTime:datetimeV2
 
-// These are defined as patterns with commPreference as list entity type
+// These are defined as patterns with commPreference as pattern.any entity type
 #CommunicationPreference
 ~set {commPreference} as my communication preference
 ~I prefer to receive {commPreference}
@@ -63,3 +63,24 @@ $commPreference:list
 fax:
 	fax
 	fascimile
+
+// You can have references to external .lu files
+
+#ref('../testcases/none.lu')
+
+#ref('../testcases/buyChocolate.lu')
+
+// ----- Definition of QnA pairs -------
+? How can I change the default message from QnA Maker?
+You can change the default message if you use the QnAMakerDialog. See this for details: https://docs.botframework.com/en-us/azure-bot-service/templates/qnamaker/#navtitle
+
+? How do I programmatically update my KB?
+You can use our REST apis to manage your KB. See here for details: https://westus.dev.cognitive.microsoft.com/docs/services/58994a073d9e04097c7ba6fe/operations/58994a073d9e041ad42d9baa
+
+? Who is your ceo?
+? get me your ceo info
+Vishwac Sena Kannan
+
+// FAQ URLs for QnA maker to ingest.
+#url('https://docs.microsoft.com/en-in/azure/cognitive-services/qnamaker/faqs')
+

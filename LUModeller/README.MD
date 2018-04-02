@@ -41,6 +41,8 @@ Once you have run LUModeller, you can use the resulting JSON files in several wa
 ```bash
 luis apps create import --in _LUISApp.json --authoringKey ""
 ```
+Note: You can install LUIS CLI from [here](https://github.com/Microsoft/botbuilder-tools/tree/master/LUIS)
+
 #### using [LUIS](http://luis.ai) portal
 - Navigate to [LUIS](http://luis.ai)
 - Sign in

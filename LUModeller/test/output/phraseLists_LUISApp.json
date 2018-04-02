@@ -1,0 +1,25 @@
+{
+  "intents": [],
+  "entities": [],
+  "composites": [],
+  "closedLists": [],
+  "bing_entities": [],
+  "model_features": [
+    {
+      "name": "ChocolateType",
+      "mode": false,
+      "words": "m&m,mars,mints,spearmings,payday,jelly,kit kat,kitkat,twix",
+      "activated": true
+    }
+  ],
+  "regex_features": [],
+  "utterances": [],
+  "patterns": [],
+  "patternAnyEntities": [],
+  "prebuiltEntities": [],
+  "luis_schema_version": "2.1.0",
+  "versionId": "0.1",
+  "name": "phraseLists",
+  "desc": "",
+  "culture": "en-us"
+}

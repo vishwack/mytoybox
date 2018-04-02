@@ -1,0 +1,64 @@
+{
+  "intents": [
+    {
+      "name": "Greeting"
+    },
+    {
+      "name": "DeleteAlarm"
+    }
+  ],
+  "entities": [],
+  "composites": [],
+  "closedLists": [],
+  "bing_entities": [
+    "datetimeV2"
+  ],
+  "model_features": [],
+  "regex_features": [],
+  "utterances": [
+    {
+      "text": "Hi",
+      "intent": "Greeting",
+      "entities": []
+    },
+    {
+      "text": "Hello",
+      "intent": "Greeting",
+      "entities": []
+    },
+    {
+      "text": "Good morning",
+      "intent": "Greeting",
+      "entities": []
+    },
+    {
+      "text": "Good evening",
+      "intent": "Greeting",
+      "entities": []
+    }
+  ],
+  "patterns": [
+    {
+      "text": "delete alarm",
+      "intent": "DeleteAlarm"
+    },
+    {
+      "text": "(delete|remove) the {alarmTime} alarm",
+      "intent": "DeleteAlarm"
+    }
+  ],
+  "patternAnyEntities": [],
+  "prebuiltEntities": [
+    {
+      "type": "datetimeV2",
+      "roles": [
+        "alarmTime"
+      ]
+    }
+  ],
+  "luis_schema_version": "2.1.0",
+  "versionId": "0.1",
+  "name": "multi-ref",
+  "desc": "",
+  "culture": "en-us"
+}

@@ -1,0 +1,29 @@
+// These are defined as patterns with commPreference as list entity type
+#CommunicationPreference
+~set {commPreference} as my communication preference
+~I prefer to receive {commPreference}
+
+// you can break up list entity definitions into multiple chunks, interleaved within a .lu file or even spread across .lu files.
+$commPreference:list
+call:
+	phone call
+	give me a ring
+	ring
+	call
+	cell phone
+	phone
+
+#Help
+can you help
+
+$commPreference:list
+text:
+	message
+	text
+	sms
+	text message
+
+$commPreference:list
+fax:
+	fax
+	fascimile
