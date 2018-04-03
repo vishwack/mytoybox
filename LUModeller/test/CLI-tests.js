@@ -27,5 +27,12 @@ describe('The lumodeller cli tool', function() {
         });
     });
 
+    it('should show ERROR when no parser decorations are found in a line', function() {
+        exec(`node ${lumodeller} ./test/testcases/bad2.lu`, (error, stdout, stderr) => {
+            assert(stdout.includes('not part of a Intent/ Entity/ QnA'));
+            done();
+        });
+    });
+
     
 });

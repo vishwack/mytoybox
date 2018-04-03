@@ -34,4 +34,5 @@ describe('Parsing LUIS intent and utterances concepts in .lu files', function() 
             parseFileContents.parseFile(testcases.tests["2-intent"].lufile,false).LUISBlob, 
             testcases.tests["2-intent"].luisJSON);
     });
+    
 });

@@ -295,13 +295,6 @@ module.exports.parseFile = function(fileContent, log)
                     };
                     qnaJsonStruct.qnaPairs.push(qnaObj);
                 });
-            } else {
-                //error. No Parser decoration found
-                if(!log) {
-                    process.stdout.write(chalk.red('ERROR: No parser decoration found. Sections need to start with # or $ or ? or #ref or #url\n'));
-                    process.stdout.write(chalk.red(chunk.toString() + '\n'));
-                    process.exit(1);
-                }
             } 
         }
 

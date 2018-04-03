@@ -132,8 +132,6 @@ var validateAndPushCurrentBuffer = function(previousSection, sectionsInFile, cur
             }
             sectionsInFile.push(previousSection);
             break;
-        default:
-            sectionsInFile.push(previousSection);
     }
     return sectionsInFile;
 };
