@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const program = require('commander');
-const fParser = require('../parser');
+const fParser = require('../lib/parser');
 const chalk = require('chalk');
 
 let rootFile = "";
