@@ -1,3 +1,0 @@
-
-// You can have references to external .lu files
-#ref('./comment.lu')

@@ -1,30 +1,37 @@
 var chai = require('chai');
 var assert = chai.assert;
-var path = require('path');
-const {exec} = require('child_process');
-const lumodeller = path.resolve('../bin/lumodeller');
-const fs = require('fs');
+const parseFileContents = require('../lib/parseFileContents');
+const testcases = require('./testcases/testcases-data');
 
 describe('Parsing LUIS intent and utterances concepts in .lu files', function() {
-
-    it('1 intent in the .lu file should be parsed correctly', function() {
-        exec(`node ${lumodeller} ./testcases/1-intent.lu -q -g`, (error, stdout, stderr) => {
-            assert.deepEqual(JSON.parse(stdout),JSON.parse(fs.readFileSync('./output/1-intent_LUISApp.json', 'utf8')));
-            done();
-        });
+    it('Parsing 1 intent and 1 entity in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["1-intent-1-entity"].lufile,false).LUISBlob, 
+            testcases.tests["1-intent-1-entity"].luisJSON);
     });
-
-    it('1 intent with labelled utterances in the .lu file should be parsed correctly', function() {
-        exec(`node ${lumodeller} ./testcases/1-intent-labelled-utterances.lu -q -g`, (error, stdout, stderr) => {
-            assert.deepEqual(JSON.parse(stdout),JSON.parse(fs.readFileSync('./output/1-intent-labelled-utterances_LUISApp.json', 'utf8')));
-            done();
-        });
+    it('Parsing 1 intent and labelled utterances in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["1-intent-labelled-utterances"].lufile,false).LUISBlob, 
+            testcases.tests["1-intent-labelled-utterances"].luisJSON);
     });
-   
-    it('2 intents in the .lu file should be parsed correctly', function() {
-        exec(`node ${lumodeller} ./testcases/2-intent.lu -q -g`, (error, stdout, stderr) => {
-            assert.deepEqual(JSON.parse(stdout),JSON.parse(fs.readFileSync('./output/2-intent_LUISApp.json', 'utf8')));
-            done();
-        });
+    it('Parsing 1 intent and prebuilt entity in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["1-intent-prebuilt-entity"].lufile,false).LUISBlob, 
+            testcases.tests["1-intent-prebuilt-entity"].luisJSON);
+    });
+    it('Parsing 1 intent in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["1-intent"].lufile,false).LUISBlob, 
+            testcases.tests["1-intent"].luisJSON);
+    });
+    it('Parsing 2 intents and scattered list entity definition in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["2-intent-scattered-list"].lufile,false).LUISBlob, 
+            testcases.tests["2-intent-scattered-list"].luisJSON);
+    });
+    it('Parsing 2 intents in .lu files', function() {
+        assert.deepEqual(
+            parseFileContents.parseFile(testcases.tests["2-intent"].lufile,false).LUISBlob, 
+            testcases.tests["2-intent"].luisJSON);
     });
 });
