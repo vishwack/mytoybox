@@ -13,23 +13,23 @@ npm i -g lumodeller
 ```
 ## Arguments
 
-| Argument											| Description 														|
-|---------------------------------------------------|-------------------------------------------------------------------|
-|-o, --out_folder <outputFolder>					| Output folder for all files the tool will generate |
-|-s, --luis_schema_version <luis_schema_version>  	| LUIS Schema version |
-|-v, --luis_versionId <versionId>	                | LUIS app version ID |
-|-n, --luis_name <lName>                         	| LUIS app name |
-|-d, --luis_desc <desc>                           	| LUIS app description |
-|-c, --luis_culture <culture>                       | LUIS app culture |
-|-t, --write_luis_batch_tests						| Writes out a separate LUIS batch test file |
-|-m, --qna_name <qName>                             | QnA KB name |
-|-q, --quiet                                        | Quiet, no trace messages |
-|-h, --help                                         | output usage information |
-|-i, --lOutFile <luisJSONFileName>					| LUIS JSON output file name	|
-|-l, --qOutFile <qnaMakerJSONFileName>				| QnA Maker JSON output file name	|
-|-e, --qTSVFile <qnaTSVFileName>					| QnA Maker TSV ouput file name 	|
-|-g, --gen_luis_only								| Write generated LUIS JSON to stdout	|
-|-a, --gen_qna_only									| Write generated QnA JSON to stdout 	|
+| Argument												| Description 														|
+|-------------------------------------------------------|-------------------------------------------------------------------|
+|-o, --out_folder \<outputFolder\>						| Output folder for all files the tool will generate |
+|-s, --luis_schema_version \<luis_schema_version\>  	| LUIS Schema version |
+|-v, --luis_versionId \<luis_versionId\>	          	| LUIS app version ID |
+|-n, --luis_name \<luis_Name\>                     		| LUIS app name |
+|-d, --luis_desc \<luis_desc\>                    		| LUIS app description |
+|-c, --luis_culture \<luis_culture\>                  	| LUIS app culture |
+|-t, --write_luis_batch_tests							| Writes out a separate LUIS batch test file |
+|-m, --qna_name \<qna_Name\>                          	| QnA KB name |
+|-q, --quiet                                        	| Quiet, no trace messages |
+|-h, --help                                         	| output usage information |
+|-i, --lOutFile \<luisJSONFileName\>					| LUIS JSON output file name	|
+|-l, --qOutFile \<qnaMakerJSONFileName\>				| QnA Maker JSON output file name	|
+|-e, --qTSVFile \<qnaMakerTSVFileName\>					| QnA Maker TSV ouput file name 	|
+|-g, --gen_luis_only									| Write generated LUIS JSON to stdout	|
+|-a, --gen_qna_only										| Write generated QnA JSON to stdout 	|
 
 
 ## Output
