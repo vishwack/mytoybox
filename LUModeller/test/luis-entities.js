@@ -25,4 +25,11 @@ describe('Parsing LUIS entity types in .lu files', function() {
             done();
         });
     });
+
+    it('should show WARN message when no labelled value is found for an entity', function() {
+        exec(`node ${lumodeller} ./test/testcases/bad3.lu`, (error, stdout, stderr) => {
+            assert(stdout.includes('WARN: No labelled value found for entity:'));
+            done();
+        });
+    });
 });
