@@ -37,15 +37,8 @@ module.exports = {
         } else {
             rootFilePath = path.parse(path.resolve('', rootFile)).dir;
         }
-        console.log('root file path:' + rootFilePath);
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
-            /*if(path.isAbsolute(file)) {
-                console.log('Absolute path to:' + file);
-            } else {
-                console.log('Relative path to:' + file);
-                console.log('Absolute path to file:' + path.resolve(file));
-            }*/
             if(!fs.existsSync(file)) {
                 process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
                 process.exit(1);
@@ -67,14 +60,12 @@ module.exports = {
             // remove this file from the list
             var parentFile = filesToParse.splice(0,1);
             var parentFilePath = path.parse(path.resolve(parentFile[0])).dir;
-            console.log('parent absolute file path:' + parentFilePath);
             // add additional files to parse to the list
             if(parsedContent.fParse.length > 0) {
                 parsedContent.fParse.forEach(function(file) {
                     if(path.isAbsolute(file)) {
                         filesToParse.push(file);
                     } else {
-                        console.log('New file absolute path: ' +  path.resolve(parentFilePath, file));
                         filesToParse.push(path.resolve(parentFilePath, file));
                     }
                 });
