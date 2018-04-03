@@ -1,5 +1,5 @@
 // reference to phrase lists for this bot
-#ref('../testcases/phraseLists.lu')
+#ref('./phraseLists.lu')
 
 #Buy chocolate
 can I get some {ChocolateType:m&m}

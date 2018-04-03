@@ -15,8 +15,9 @@ npm i -g lumodeller
 
 | Argument											| Description 														|
 |---------------------------------------------------|-------------------------------------------------------------------|
+|-o, --out_folder <outputFolder>					| Output folder for all files the tool will generate |
 |-s, --luis_schema_version <luis_schema_version>  	| LUIS Schema version |
-|-d, --luis_versionId <versionId>	                | LUIS app version ID |
+|-v, --luis_versionId <versionId>	                | LUIS app version ID |
 |-n, --luis_name <lName>                         	| LUIS app name |
 |-d, --luis_desc <desc>                           	| LUIS app description |
 |-c, --luis_culture <culture>                       | LUIS app culture |
@@ -24,6 +25,12 @@ npm i -g lumodeller
 |-m, --qna_name <qName>                             | QnA KB name |
 |-q, --quiet                                        | Quiet, no trace messages |
 |-h, --help                                         | output usage information |
+|-i, --lOutFile <luisJSONFileName>					| LUIS JSON output file name	|
+|-l, --qOutFile <qnaMakerJSONFileName>				| QnA Maker JSON output file name	|
+|-e, --qTSVFile <qnaTSVFileName>					| QnA Maker TSV ouput file name 	|
+|-g, --gen_luis_only								| Write generated LUIS JSON to stdout	|
+|-a, --gen_qna_only									| Write generated QnA JSON to stdout 	|
+
 
 ## Output
 LUModeller tool will output:
@@ -222,7 +229,7 @@ I'm the echoBot! Nice to meet you.
 
 ### External references
 Two different references are supported in the .lu file:
-- Reference to another .lu file via #ref('\<.lu file name\>')
+- Reference to another .lu file via #ref('\<.lu file name\>'). Ref can be an absolute path or <b>relative path from the containing .lu file</b>
 - Reference to URL for QnAMaker to ingest during KB creation via #url('\<URL\>')
 
 Here's an example of those references: 

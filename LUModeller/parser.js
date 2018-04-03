@@ -16,8 +16,36 @@ module.exports = {
         var filesToParse = [rootFile];
         var allParsedLUISContent = new Array();
         var allParsedQnAContent = new Array();
+        
+        // is there an output folder?
+        var outFolder = __dirname;
+        if(program.out_folder) {
+            if(path.isAbsolute(program.out_folder)) {
+                outFolder = program.out_folder;
+            } else {
+                outFolder = path.resolve('', program.out_folder);
+            }
+            if(!fs.existsSync(outFolder)) {
+                process.stdout.write(chalk.red('\nOutput folder ' + outFolder + ' does not exist\n'));
+                process.exit(1);
+            }
+        }
+        // get and save the path to root file
+        var rootFilePath = __dirname;
+        if(path.isAbsolute(rootFile)) {
+            rootFilePath = rootFile;
+        } else {
+            rootFilePath = path.parse(path.resolve('', rootFile)).dir;
+        }
+        console.log('root file path:' + rootFilePath);
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
+            /*if(path.isAbsolute(file)) {
+                console.log('Absolute path to:' + file);
+            } else {
+                console.log('Relative path to:' + file);
+                console.log('Absolute path to file:' + path.resolve(file));
+            }*/
             if(!fs.existsSync(file)) {
                 process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
                 process.exit(1);
@@ -37,28 +65,36 @@ module.exports = {
                 allParsedQnAContent.push(parsedContent.QnABlob);
             }
             // remove this file from the list
-            filesToParse.splice(0,1);
+            var parentFile = filesToParse.splice(0,1);
+            var parentFilePath = path.parse(path.resolve(parentFile[0])).dir;
+            console.log('parent absolute file path:' + parentFilePath);
             // add additional files to parse to the list
             if(parsedContent.fParse.length > 0) {
-                parsedContent.fParse.forEach((file) => filesToParse.push(file));
+                parsedContent.fParse.forEach(function(file) {
+                    if(path.isAbsolute(file)) {
+                        filesToParse.push(file);
+                    } else {
+                        console.log('New file absolute path: ' +  path.resolve(parentFilePath, file));
+                        filesToParse.push(path.resolve(parentFilePath, file));
+                    }
+                });
             }
         }
         var finalLUISJSON = collateLUISFiles(allParsedLUISContent);
         var finalQnAJSON = collateQnAFiles(allParsedQnAContent);
-        if(!program.versionId) program.versionId = "0.1";
+        if(!program.luis_versionId) program.luis_versionId = "0.1";
         if(!program.luis_schema_version) program.luis_schema_version = "2.1.0";
-        if(!program.lName) program.lName = path.basename(rootFile, path.extname(rootFile));
-        if(!program.desc) program.desc = "";
-        if(!program.culture) program.culture = "en-us";   
-        if(!program.qName) program.qName = path.basename(rootFile, path.extname(rootFile));
+        if(!program.luis_name) program.luis_name = path.basename(rootFile, path.extname(rootFile));
+        if(!program.luis_desc) program.luis_desc = "";
+        if(!program.luis_culture) program.luis_culture = "en-us";   
+        if(!program.qna_name) program.qna_name = path.basename(rootFile, path.extname(rootFile));
         finalLUISJSON.luis_schema_version = program.luis_schema_version;
-        finalLUISJSON.versionId = program.versionId;
-        finalLUISJSON.name = program.lName,
-        finalLUISJSON.desc = program.desc;
-        finalLUISJSON.culture = program.culture;
-        finalQnAJSON.name = program.qName;
-        if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
-        if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
+        finalLUISJSON.versionId = program.luis_versionId;
+        finalLUISJSON.name = program.luis_name,
+        finalLUISJSON.desc = program.luis_desc;
+        finalLUISJSON.culture = program.luis_culture;
+        finalQnAJSON.name = program.qna_name;
+        
         var writeQnAFile = (finalQnAJSON.qnaPairs.length > 0) || 
                            (finalQnAJSON.urls.length > 0);
 
@@ -86,51 +122,69 @@ module.exports = {
                 process.stdout.write(chalk.gray(JSON.stringify(finalQnAJSON, null, 2) + '\n'));
             }
         }
+        
 
+        if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
+        if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
+        if(!program.qTSVFile) program.qTSVFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaTSV.tsv"; 
         if(writeLUISFile) {
             // write out the final LUIS Json
-            fs.writeFileSync(program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
+            fs.writeFileSync(outFolder + '\\' + program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + program.lOutFile + '\n'));
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + outFolder + '\\' + program.lOutFile + '\n'));
+                    process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + program.lOutFile + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + outFolder + '\\' + program.lOutFile + '\n'));
         }
 
         if(writeQnAFile) {
             // write out the final LUIS Json
-            fs.writeFileSync(program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
+            fs.writeFileSync(outFolder + '\\' + program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + program.qOutFile + '\n'));
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + outFolder + '\\' + program.qOutFile + '\n'));
+                    process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + program.qOutFile + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + outFolder + '\\' + program.qOutFile + '\n'));
 
             // write tsv file for QnA maker
-            var QnAFileContent;
+            var QnAFileContent = "";
             finalQnAJSON.qnaPairs.forEach(function(QnAPair) {
                 QnAFileContent += QnAPair.question + '\t' + QnAPair.answer + '\t Editorial \r\n';
             });
-            var QnATsvFileName = path.basename(rootFile, path.extname(rootFile)) + "_qnaTSV.tsv";
-            fs.writeFileSync(QnATsvFileName, QnAFileContent, function(error) {
+            fs.writeFileSync(outFolder + '\\' + program.qTSVFile, QnAFileContent, function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + QnATsvFileName + '\n'));
+                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + outFolder + '\\' + program.qTSVFile + '\n'));
+                    process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + QnATsvFileName + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + outFolder + '\\' + program.qTSVFile + '\n'));
         }
 
         // write luis batch test file if requested
         if(program.write_luis_batch_tests) {
             var LUISBatchFileName = path.basename(rootFile, path.extname(rootFile)) + "_LUISBatchTest.json";
             // write out the final LUIS Json
-            fs.writeFileSync(LUISBatchFileName, JSON.stringify(finalLUISJSON.utterances, null, 2), function(error) {
+            fs.writeFileSync(outFolder + '\\' + LUISBatchFileName, JSON.stringify(finalLUISJSON.utterances, null, 2), function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS batch test JSON file - ' + LUISBatchFileName + '\n'));
+                    process.stdout.write(chalk.red('Unable to write LUIS batch test JSON file - ' + outFolder + '\\' + LUISBatchFileName + '\n'));
+                    process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS batch test JSON file to ' + LUISBatchFileName + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS batch test JSON file to ' + outFolder + '\\' +  LUISBatchFileName + '\n'));
         }
+        // write luis only to stdout
+        if(program.gen_luis_only) {
+            process.stdout.write(JSON.stringify(finalLUISJSON, null, 2));
+            process.exit(0);
+        }
+        // write qna only to stdout
+        if(program.gen_qna_only) {
+            process.stdout.write(JSON.stringify(finalQnAJSON, null, 2));
+            process.exit(0);
+        }
+        process.exit(0);
     }
 };
 /**

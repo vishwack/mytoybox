@@ -66,9 +66,9 @@ fax:
 
 // You can have references to external .lu files
 
-#ref('./Examples/none.lu')
+#ref('./none.lu')
 
-#ref('./Examples/buyChocolate.lu')
+#ref('./buyChocolate.lu')
 
 // ----- Definition of QnA pairs -------
 ? How can I change the default message from QnA Maker?
