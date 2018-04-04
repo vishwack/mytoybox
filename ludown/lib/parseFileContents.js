@@ -1,245 +1,19 @@
-const fs = require('fs');
-const path = require('path');
-
-module.exports = {
-    handleFile(rootFile, program) {
-        // handle root file and subseqntly own calling parse on other files found in rootFile
-        var filesToParse = [rootFile];
-        var allParsedLUISContent = new Array();
-        var allParsedQnAContent = new Array();
-        while(filesToParse.length > 0) {
-            var file = filesToParse[0];
-            fs.stat(file, (err, stats) => {
-                if(err) {
-                    console.error('Sorry unable to open [' + file + ']');        
-                    return;
-                }
-            });
-            var fileContent = fs.readFileSync(file);
-            if (!fileContent) {
-                console.error('Sorry, error reading file:' + file);    
-            }
-            if(!program.quiet) console.log('---Parsing file: ' + file);
-            var parsedContent = parseFile(fileContent, program.quiet);
-            if (!parsedContent) {
-                console.error('Sorry, file ' + file + 'had invalid content');
-            } else {
-                if(!program.quiet)console.log('---Parsing complete: ' + file);
-                allParsedLUISContent.push(parsedContent.LUISBlob);
-                allParsedQnAContent.push(parsedContent.QnABlob);
-            }
-            // remove this file from the list
-            filesToParse.splice(0,1);
-            // add additional files to parse to the list
-            if(parsedContent.fParse.length > 0) {
-                parsedContent.fParse.forEach((file) => filesToParse.push(file));
-            }
-            if(filesToParse.length > 0) {
-                if(!program.quiet)console.log('parsing more files..' + JSON.stringify(filesToParse));
-            }
-        }
-        var finalLUISJSON = collateLUISFiles(allParsedLUISContent);
-        var finalQnAJSON = collateQnAFiles(allParsedQnAContent);
-        if(!program.versionId) program.versionId = "0.1";
-        if(!program.luis_schema_version) program.luis_schema_version = "2.1.0";
-        if(!program.lName) program.lName = path.basename(rootFile, path.extname(rootFile));
-        if(!program.desc) program.desc = "";
-        if(!program.culture) program.culture = "en-us";   
-        if(!program.qName) program.qName = path.basename(rootFile, path.extname(rootFile));
-        finalLUISJSON.luis_schema_version = program.luis_schema_version;
-        finalLUISJSON.versionId = program.versionId;
-        finalLUISJSON.name = program.lName,
-        finalLUISJSON.desc = program.desc;
-        finalLUISJSON.culture = program.culture;
-
-        finalQnAJSON.name = program.qName;
-        if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
-        if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
-        var writeQnAFile = (finalQnAJSON.qnaPairs.length > 0) || 
-                           (finalQnAJSON.urls.length > 0);
-
-        var  writeLUISFile = (finalLUISJSON[LUISObjNameEnum.INTENT].length > 0) ||
-                             (finalLUISJSON[LUISObjNameEnum.ENTITIES].length > 0) || 
-                             (finalLUISJSON[LUISObjNameEnum.PATTERNANYENTITY].length > 0) ||
-                             (finalLUISJSON[LUISObjNameEnum.CLOSEDLISTS].length > 0) ||
-                             (finalLUISJSON.patterns.length > 0) ||
-                             (finalLUISJSON.utterances.length > 0) ||
-                             (finalLUISJSON.bing_entities.length > 0) ||
-                             (finalLUISJSON.prebuiltEntities.length > 0) ||
-                             (finalLUISJSON.model_features.length > 0);
-
-        if(!program.quiet) {
-            if(writeLUISFile) {
-                console.log('-----------------------------------');
-                console.log('          FINAL LUIS JSON          ');
-                console.log('-----------------------------------');
-                console.log(JSON.stringify(finalLUISJSON, null, 2));
-                console.log();    
-            }
-            if(writeQnAFile) {
-                console.log('-----------------------------------');
-                console.log('          FINAL QnA JSON          ');
-                console.log('-----------------------------------');
-                console.log(JSON.stringify(finalQnAJSON, null, 2));
-            }
-        }
-
-        if(writeLUISFile) {
-            // write out the final LUIS Json
-            fs.writeFileSync(program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
-                if(error) {
-                    console.error('Unable to write LUIS JSON file - ' + program.lOutFile);
-                } 
-            });
-            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.lOutFile);
-        }
-
-        if(writeQnAFile) {
-            // write out the final LUIS Json
-            fs.writeFileSync(program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
-                if(error) {
-                    console.error('Unable to write LUIS JSON file - ' + program.qOutFile);
-                } 
-            });
-            if(!program.quiet) console.log('Successfully wrote LUIS model to ' + program.qOutFile);
-        }
-    }
-};
-var collateQnAFiles = function(parsedBlobs) {
-    var FinalQnAJSON = parsedBlobs[0];
-    parsedBlobs.splice(0,1);
-    parsedBlobs.forEach(function(blob) {
-        // does this blob have URLs?
-        if(blob.urls.length > 0) {
-            // add this url if this does not already exist in finaljson
-            blob.urls.forEach(function(qnaUrl) {
-                if(!FinalQnAJSON.urls.includes(qnaUrl)) {
-                    FinalQnAJSON.urls.push(qnaUrl);
-                }
-            });
-        }
-
-        // does this blob have qnapairs?
-        if(blob.qnaPairs.length > 0) {
-            // walk through each qnaPair and add it if the question does not exist
-            blob.qnaPairs.forEach(function(qnaPair) {
-                var qnaExists = false;
-                var fIndex = 0;
-                for(fIndex in FinalQnAJSON.qnaPairs) {
-                    if(qnaPair.question === FinalQnAJSON.qnaPairs[fIndex].question) {
-                        qnaExists = true;
-                        break;
-                    }
-                }
-                if(!qnaExists) {
-                    FinalQnAJSON.qnaPairs.push(qnaPair);
-                }
-            });
-        }
-    });
-    return FinalQnAJSON;
-}
-var collateLUISFiles = function(parsedBlobs) {
-    var FinalLUISJSON = parsedBlobs[0];
-    parsedBlobs.splice(0,1);
-    parsedBlobs.forEach(function(blob) {
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.INTENT);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.ENTITIES);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.PATTERNANYENTITY);
-        mergeResults(blob, FinalLUISJSON, LUISObjNameEnum.CLOSEDLISTS);
-        // do we have patterns here?
-        if(blob.patterns.length > 0) {
-            blob.patterns.forEach(function(pattern) {
-                FinalLUISJSON.patterns.push(pattern);
-            });
-        }
-        // do we have utterances here?
-        if(blob.utterances.length > 0) {
-            blob.utterances.forEach(function(utteranceItem) {
-                FinalLUISJSON.utterances.push(utteranceItem);
-            });
-        }
-        // do we have bing_entities here? 
-        if(blob.bing_entities.length > 0) {
-            blob.bing_entities.forEach(function(bingEntity) {
-                if(!FinalLUISJSON.bing_entities.includes(bingEntity)) FinalLUISJSON.bing_entities.push(bingEntity);
-            });
-        }
-        // do we have prebuiltEntities here?
-        if(blob.prebuiltEntities.length > 0) {
-            blob.prebuiltEntities.forEach(function(prebuiltEntity){
-                var prebuiltTypeExists = false;
-                for(fIndex in FinalLUISJSON.prebuiltEntities) {
-                    if(prebuiltEntity.type === FinalLUISJSON.prebuiltEntities[fIndex].type) {
-                        // do we have all the roles? if not, merge the roles
-                        prebuiltEntity.roles.forEach(function(role) {
-                            if(!FinalLUISJSON.prebuiltEntities[fIndex].roles.includes(role)) {
-                                FinalLUISJSON.prebuiltEntities[fIndex].roles.push(role);
-                            }
-                        });
-                        prebuiltTypeExists = true;
-                        break;
-                    }
-                }
-                if(!prebuiltTypeExists) {
-                    FinalLUISJSON.prebuiltEntities.push(prebuiltEntity);
-                }
-            });
-        }
-        // do we have model_features?
-        if(blob.model_features.length > 0) {
-            blob.model_features.forEach(function(modelFeature) {
-                var modelFeatureExists = false;
-                for(fIndex in FinalLUISJSON.model_features) {
-                    if(modelFeature.name === FinalLUISJSON.model_features[fIndex].name) {
-                        // add values to the existing model feature
-                        FinalLUISJSON.model_features[fIndex].words += "," + modelFeature.words;
-                        modelFeatureExists = true;
-                        break;
-                    }
-                }
-                if(!modelFeatureExists) {
-                    FinalLUISJSON.model_features.push(modelFeature);
-                }
-            });
-        }
-    }); 
-    return FinalLUISJSON;
-}
-var mergeResults = function(blob, finalCollection, type) {
-    if(blob[type].length > 0) {
-        blob[type].forEach(function(blobItem){
-            // add if this intent does not already exist in finalJSON
-            var itemExists = false;
-            for(fIndex in finalCollection[type]) {
-                if(blobItem.name === finalCollection[type][fIndex].name){
-                    itemExists = true;
-                    break;
-                }
-            }
-            if(!itemExists) {
-                finalCollection[type].push(blobItem);
-            }
-        });
-    }
-}
-var parseFile = function(fileContent, log) 
+const LUISObjNameEnum = require('./enums/luisobjenum');
+const PARSERCONSTS = require('./enums/parserconsts');
+const builtInTypes = require('./enums/luisbuiltintypes');
+const helpers = require('./helpers');
+const chalk = require('chalk');
+/**
+ * Main parser code to parse current file contents into LUIS and QNA sections.
+ *
+ * @param {string} fileContent current file content
+ * @param {boolean} log indicates if we need verbose logging.
+ *  
+ * @returns {additionalFilesToParse,LUISJsonStruct,qnaJsonStruct} Object that contains list of additional files to parse, parsed LUIS object and parsed QnA object
+ */
+module.exports.parseFile = function(fileContent, log) 
 {
     var additionalFilesToParse = new Array();
-    var builtInTypes = 
-        [
-            "datetimeV2",
-            "age",
-            "dimension",
-            "email",
-            "money",
-            "number",
-            "ordinal",
-            "percentage",
-            "phoneNumber",
-            "temperature",
-            "url"
-        ];
     var otherTypes = ['list'];
     var LUISJsonStruct = {
         "intents": new Array(),
@@ -257,9 +31,10 @@ var parseFile = function(fileContent, log)
     var qnaJsonStruct = {
         "qnaPairs": new Array(),
         "urls": new Array()
-    }
-    // split on blank lines
-    var splitOnBlankLines = fileContent.toString().split(/\n\s*\n|\r\n\s*\r\n/);
+    };
+    
+    var splitOnBlankLines = helpers.splitFileBySections(fileContent.toString());
+
     // loop through every chunk of information
     splitOnBlankLines.forEach(function(chunk) {
         // is this an intent or entity?
@@ -337,10 +112,10 @@ var parseFile = function(fileContent, log)
                                         }
                                         LUISJsonStruct.utterances.push(utteranceObject);
                                     } else {
-                                        if(!log) console.log('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance);
+                                        if(!log) process.stdout.write(chalk.yellow('[WARN]: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance + '\n'));
                                     }
                                 } else {
-                                    if(!log)  console.log('WARN: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value');
+                                    if(!log)  process.stdout.write(chalk.yellow('[WARN]: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value \n'));
                                 }
                             });
                         } else {
@@ -520,12 +295,6 @@ var parseFile = function(fileContent, log)
                     };
                     qnaJsonStruct.qnaPairs.push(qnaObj);
                 });
-            } else {
-                //error. No Parser decoration found
-                if(!log) {
-                    console.error('ERROR: No parser decoration found. Sections need to start with # or $ or ? or #ref or #url');
-                    console.error(chunk.toString());
-                }
             } 
         }
 
@@ -536,23 +305,16 @@ var parseFile = function(fileContent, log)
         "QnABlob": qnaJsonStruct
     };
     
-}
-const LUISObjNameEnum = {
-    INTENT: "intents",
-    ENTITIES: "entities",
-    PATTERNANYENTITY: "patternAnyEntities",
-    CLOSEDLISTS: "closedLists"
 };
 
-const PARSERCONSTS = {
-    FILEREF: "#ref",
-    INTENT: "#",
-    ENTITY: "$",
-    QNA: "?",
-    URLREF: "#url",
-    COMMENT: "//"
-}
-
+/**
+ * Helper function to add an item to collection if it does not exist
+ *
+ * @param {object} collection contents of the current collection
+ * @param {LUISObjNameEnum} type item type
+ * @param {object} value value of the current item to examine and add
+ *  
+ */
 var addItemIfNotPresent = function(collection, type, value) {
     var hasValue = false;
     for(var i in collection[type]) {
@@ -569,4 +331,4 @@ var addItemIfNotPresent = function(collection, type, value) {
         }
         collection[type].push(itemObj);
     }  
-}
+};
