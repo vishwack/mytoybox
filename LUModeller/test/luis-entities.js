@@ -6,14 +6,14 @@ const {exec} = require('child_process');
 var path = require('path');
 const lumodeller = path.resolve('../bin/lumodeller');
 
-describe('Parsing LUIS entity types in .lu files', function() {
-    it('Parsing all entity types in .lu files', function() {
+describe('LUIS entity types in .lu files', function() {
+    it('should be parsed correctly when all entity types is specified', function() {
         assert.deepEqual(
             parseFileContents.parseFile(testcases.tests["all-entity-types"].lufile,false).LUISBlob, 
             testcases.tests["all-entity-types"].luisJSON);
     });
     
-    it('Parsing phraselists in .lu files', function() {
+    it('should be parsed correctly when phraselists is specified', function() {
         assert.deepEqual(
             parseFileContents.parseFile(testcases.tests.phraselist.lufile,false).LUISBlob, 
             testcases.tests.phraselist.luisJSON);
@@ -28,7 +28,7 @@ describe('Parsing LUIS entity types in .lu files', function() {
 
     it('should show WARN message when no labelled value is found for an entity', function() {
         exec(`node ${lumodeller} ./test/testcases/bad3.lu`, (error, stdout, stderr) => {
-            assert(stdout.includes('WARN: No labelled value found for entity:'));
+            assert(stdout.includes('is missing labelled value'));
             done();
         });
     });

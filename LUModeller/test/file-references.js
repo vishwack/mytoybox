@@ -5,7 +5,7 @@ const {exec} = require('child_process');
 const lumodeller = path.resolve('../bin/lumodeller');
 var fs = require('fs');
 
-describe('The lumodeller cli tool handling file references', function() {
+describe('When handling file references, the lumodeller cli tool', function() {
 
     it('should handle single file references correctly', function() {
         exec(`node ${lumodeller} ./test/testcases/buyChocolate.lu -q -g`, (error, stdout, stderr) => {

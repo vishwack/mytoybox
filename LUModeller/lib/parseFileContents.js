@@ -112,10 +112,10 @@ module.exports.parseFile = function(fileContent, log)
                                         }
                                         LUISJsonStruct.utterances.push(utteranceObject);
                                     } else {
-                                        if(!log) process.stdout.write(chalk.yellow('WARN: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance + '\n'));
+                                        if(!log) process.stdout.write(chalk.yellow('[WARN]: No labelled value found for entity: ' + entity + ' in utterance: ' + utterance + '\n'));
                                     }
                                 } else {
-                                    if(!log)  process.stdout.write(chalk.yellow('WARN: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value \n'));
+                                    if(!log)  process.stdout.write(chalk.yellow('[WARN]: Entity ' + entity + ' in utterance: "' + utterance + '" is missing labelled value \n'));
                                 }
                             });
                         } else {

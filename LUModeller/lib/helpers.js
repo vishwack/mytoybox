@@ -85,7 +85,7 @@ module.exports.splitFileBySections = function(fileContent) {
                     currentSectionType = null;
                 }
             } else {
-                process.stdout.write(chalk.red('Error: Line ' + lineIndex + ' is not part of a Intent/ Entity/ QnA \n'));
+                process.stdout.write(chalk.red('Error: Line #' + lineIndex + ' is not part of a Intent/ Entity/ QnA \n'));
                 process.stdout.write(chalk.red('Stopping further processing.\n'));
                 process.exit(1);
             }
@@ -114,21 +114,21 @@ var validateAndPushCurrentBuffer = function(previousSection, sectionsInFile, cur
         case PARSERCONSTS.INTENT:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0] + '\n'));
+                process.stdout.write(chalk.yellow('Line #' + lineIndex + ': [WARN] No utterances found for intent: ' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;
         case PARSERCONSTS.QNA:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0] + '\n'));
+                process.stdout.write(chalk.yellow('Line #' + lineIndex + ': [WARN] No answer found for question' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;
         case PARSERCONSTS.ENTITY:
             // warn if there isnt at least one utterance in an intent
             if(previousSection.split(/\r\n/).length === 1)  {
-                process.stdout.write(chalk.yellow(lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0] + '\n'));
+                process.stdout.write(chalk.yellow('Line #' + lineIndex + ': [WARN] No list entity definition found for entity:' + previousSection.split(/\r\n/)[0] + '\n'));
             }
             sectionsInFile.push(previousSection);
             break;

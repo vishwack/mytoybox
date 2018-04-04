@@ -6,8 +6,8 @@ const {exec} = require('child_process');
 var path = require('path');
 const lumodeller = path.resolve('../bin/lumodeller');
 
-describe('Parsing QnA concepts .lu files', function() {
-    it('Parsing', function() {
+describe('The LU modeller tool', function() {
+    it('should parse QnA concepts .lu files correctly', function() {
         assert.deepEqual(
             parseFileContents.parseFile(testcases.tests.qna.lufile,false).QnABlob, 
             testcases.tests.qna.qnaJSON);

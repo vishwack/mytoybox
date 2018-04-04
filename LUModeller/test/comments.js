@@ -48,8 +48,8 @@ var outputBlob =
     "prebuiltEntities": [],
 };
 
-describe('Parsing comments in .lu files', function() {
-    it('1 intent with comments in the .lu file should be parsed correctly', function() {
+describe('Comment blocks in .lu files', function() {
+    it('should be parsed correctly with 1 intent and comments specified', function() {
         assert.deepEqual(parseFileContents.parseFile(inputFileContent,false).LUISBlob, outputBlob);
     });
 });

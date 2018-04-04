@@ -4,3 +4,5 @@
 
 #ref('./1-intent-pattern-prebuilt.lu')
 
+#ref('./buyChocolate.lu')
+
