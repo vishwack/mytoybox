@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License.
+ */
 module.exports.tests = {
     "qna": {
         "lufile":`// This is a QnA definition. follows ? <question> <answer> format.

@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License.
+ */
 var chai = require('chai');
 var assert = chai.assert;
 const parseFileContents = require('../lib/parseFileContents');
