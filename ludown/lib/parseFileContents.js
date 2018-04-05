@@ -5,7 +5,6 @@
 const LUISObjNameEnum = require('./enums/luisobjenum');
 const PARSERCONSTS = require('./enums/parserconsts');
 const builtInTypes = require('./enums/luisbuiltintypes');
-const LUIS = require('./serializable/luis');
 const helpers = require('./helpers');
 const chalk = require('chalk');
 /**
@@ -20,7 +19,6 @@ module.exports.parseFile = function(fileContent, log)
 {
     var additionalFilesToParse = new Array();
     var otherTypes = ['list'];
-    var LUISObj = new LUIS();
     var LUISJsonStruct = {
         "intents": new Array(),
         "entities": new Array(),
