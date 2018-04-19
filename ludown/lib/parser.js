@@ -24,7 +24,7 @@ module.exports = {
         var allParsedQnAContent = new Array();
         
         // is there an output folder?
-        var outFolder = __dirname;
+        var outFolder = process.cwd();
         if(program.out_folder) {
             if(path.isAbsolute(program.out_folder)) {
                 outFolder = program.out_folder;
@@ -45,7 +45,7 @@ module.exports = {
         }
         while(filesToParse.length > 0) {
             var file = filesToParse[0];
-            if(!fs.existsSync(file)) {
+            if(!fs.existsSync(path.resolve(file))) {
                 process.stdout.write(chalk.red('Sorry unable to open [' + file + ']\n'));        
                 process.exit(1);
             }
@@ -121,9 +121,27 @@ module.exports = {
         }
         
 
-        if(!program.lOutFile) program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";
-        if(!program.qOutFile) program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
-        if(!program.qTSVFile) program.qTSVFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaTSV.tsv"; 
+        if(!program.lOutFile) {
+            if(!program.luis_name) {
+                program.lOutFile = path.basename(rootFile, path.extname(rootFile)) + "_LUISApp.json";  
+            } else {
+                program.lOutFile = program.luis_name + "_LUISApp.json";
+            }
+        }
+        if(!program.qOutFile) {
+            if(!program.qna_name) {
+                program.qOutFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaKB.json";
+            } else {
+                program.qOutFile = program.qna_name + "_qnaKB.json";
+            }
+        }
+        if(!program.qTSVFile) {
+            if(!program.qna_name) {
+                program.qTSVFile = path.basename(rootFile, path.extname(rootFile)) + "_qnaTSV.tsv";
+            } else {
+                program.qTSVFile = program.qna_name + "_qnaTSV.tsv";
+            }
+        }
         if(writeLUISFile) {
             // write out the final LUIS Json
             fs.writeFileSync(outFolder + '\\' + program.lOutFile, JSON.stringify(finalLUISJSON, null, 2), function(error) {
@@ -139,11 +157,11 @@ module.exports = {
             // write out the final LUIS Json
             fs.writeFileSync(outFolder + '\\' + program.qOutFile, JSON.stringify(finalQnAJSON, null, 2), function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + outFolder + '\\' + program.qOutFile + '\n'));
+                    process.stdout.write(chalk.red('Unable to write QnA JSON file - ' + outFolder + '\\' + program.qOutFile + '\n'));
                     process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + outFolder + '\\' + program.qOutFile + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote QnA KB to ' + outFolder + '\\' + program.qOutFile + '\n'));
 
             // write tsv file for QnA maker
             var QnAFileContent = "";
@@ -152,16 +170,16 @@ module.exports = {
             });
             fs.writeFileSync(outFolder + '\\' + program.qTSVFile, QnAFileContent, function(error) {
                 if(error) {
-                    process.stdout.write(chalk.red('Unable to write LUIS JSON file - ' + outFolder + '\\' + program.qTSVFile + '\n'));
+                    process.stdout.write(chalk.red('Unable to write QnA TSV file - ' + outFolder + '\\' + program.qTSVFile + '\n'));
                     process.exit(1);
                 } 
             });
-            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote LUIS model to ' + outFolder + '\\' + program.qTSVFile + '\n'));
+            if(!program.quiet) process.stdout.write(chalk.green('Successfully wrote QnA TSV to ' + outFolder + '\\' + program.qTSVFile + '\n'));
         }
 
         // write luis batch test file if requested
         if(program.write_luis_batch_tests) {
-            var LUISBatchFileName = path.basename(rootFile, path.extname(rootFile)) + "_LUISBatchTest.json";
+            var LUISBatchFileName = program.lOutFile.replace("_LUISApp.json","_LUISBatchTest.json");
             // write out the final LUIS Json
             fs.writeFileSync(outFolder + '\\' + LUISBatchFileName, JSON.stringify(finalLUISJSON.utterances, null, 2), function(error) {
                 if(error) {
