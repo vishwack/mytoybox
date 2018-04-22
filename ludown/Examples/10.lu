@@ -1,68 +1,72 @@
-#Greeting
-Hi
-Hello
-Good morning
-Good evening
+# Greeting
+- Hi
+- Hello
+- Good morning
+- Good evening
 
-#Help
-help
-I need help
-please help
+# Help
+- help
+- I need help
+- please help
 
-#AskForUserName
-{userName:vishwac}
-I'm {userName:vishwac}
-call me {userName:vishwac}
-my name is {userName:vishwac}
-{userName:vishwac} is my name
-you can call me {userName:vishwac}
+# AskForUserName
+- {userName=vishwac}
+- I'm {userName=vishwac}
+- call me {userName=vishwac}
+- my name is {userName=vishwac}
+- {userName=vishwac} is my name
+- you can call me {userName=vishwac}
 
+> # Entity definitions
 $userName:simple
+
+> PREBUILT entities are global. LUIS will always provide results for these when ever a prebuilt entity is found in any utterance.
 
 $PREBUILT:datetimeV2
 
-#CreateAlarm
-create an alarm
-create an alarm for 7AM
-set an alarm for 7AM next thursday
+# CreateAlarm
+- create an alarm
+- create an alarm for 7AM 
+- set an alarm for 7AM next thursday
 
-// add these as patterns
-#DeleteAlarm
-~delete alarm
-~(delete|remove) the {alarmTime} alarm
+> add these as patterns
 
-// alarmTime is a role for prebuilt datetimev2 entity
-$alarmTime:datetimeV2
+# DeleteAlarm
+> this utterance will be added as a pattern since there is no labelled value for the alarmTime entity
 
-// These are defined as patterns with commPreference as pattern.any entity type
-#CommunicationPreference
-~set {commPreference} as my communication preference
-~I prefer to receive {commPreference}
+- delete the {alarmTime} alarm 
+- remove the {alarmTime} alarm 
 
-// you can break up list entity definitions into multiple chunks, interleaved within a .lu file or even spread across .lu files.
-$commPreference:list
-call:
-	phone call
-	give me a ring
-	ring
-	call
-	cell phone
-	phone
+> Since there is a list entity definition, any synonyms in this list will get picked up as list entity type and should not be labelled
+# CommunicationPreference
+- set phone call as my communication preference
+- I prefer to receive text message
 
-#Help
-can you help
+> List entity definition 
 
-$commPreference:list
-text:
-	message
-	text
-	sms
-	text message
+$commPreference:call=
+- phone call
+- give me a ring
+- ring
+- call
+- cell phone
+- phone
 
-$commPreference:list
-fax:
-	fax
-	fascimile
+# Help
+- can you help
 
-// You can have references to external .lu files
-#ref('./none.lu')
+> you can break up list entity definitions into multiple chunks, interleaved within a .lu file or even spread across .lu files.
+
+$commPreference:text=
+- message
+- text
+- sms
+- text message
+
+$commPreference:fax=
+- fax
+- fascimile
+
+> You can have references to external .lu files
+
+[None intent definition](./none.lu)
