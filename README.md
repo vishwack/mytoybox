@@ -1,4 +1,4 @@
-[Plan](http://foo.com) | [**<u>Build</u>**](http://foo.com) | [Test](http://foo.com) | [Publish](http://foo.com) | [Connect](http://foo.com) | [Evaluate](http://foo.com) |
+[Plan](http://foo.com) | [**__Build__**](http://foo.com) | [Test](http://foo.com) | [Publish](http://foo.com) | [Connect](http://foo.com) | [Evaluate](http://foo.com) |
 
 # Bot Builder SDK
 
