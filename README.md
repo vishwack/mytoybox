@@ -8,7 +8,7 @@ The Microsoft Bot Builder SDK is a powerful, easy-to-use framework that provides
 
 
 
-![Bot Framework](https://botframework.blob.core.windows.net/web/images/bot-framework.png)
+![Bot Framework](/e2e_horizontal.png)
 
 Think of a bot as an app that users interact with in a conversational way. Bots can communicate conversationally with text, cards , or speech. A bot may be as simple as basic pattern matching with a response, or it may be a sophisticated weaving of artificial intelligence techniques with complex conversational state tracking and integration to existing business services.
 
